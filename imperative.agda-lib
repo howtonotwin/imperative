@@ -1,0 +1,4 @@
+name: imperative
+include: src
+depend: standard-library
+flags: --erasure --cubical-compatible --two-level
