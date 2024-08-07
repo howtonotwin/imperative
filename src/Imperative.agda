@@ -2,6 +2,7 @@
 module Imperative where
 
 open import Agda.Primitive
+open import Data.List
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
@@ -20,25 +21,28 @@ module Spec (StateThread : SSetω₀) (Ref : StateThread → Set lzero) where
   data Condition (s : StateThread) : (ℓ : Level) → SSetω₀ where
     𝟏 : Condition s lzero
     _⨾_ : {ℓ₁ ℓ₂ : Level} → Assignment s ℓ₁ → Condition s ℓ₂ → Condition s (ℓ₁ ⊔ ℓ₂)
+  infixr 0 _⨾⨾_
+  pattern _⨾⨾_ v r = v ↦ _ ⨾ r
+
+  liveRefs : ∀ {s : StateThread} {ℓ} → Condition s ℓ → List (Ref s)
+  liveRefs 𝟏         = []
+  liveRefs (x ⨾⨾ xs) = x ∷ liveRefs xs
 
   infixr 0 _&_
-  _&_ : {s : StateThread} {ℓ₁ ℓ₂ : Level} → Condition s ℓ₁ → Condition s ℓ₂ → Condition s (ℓ₁ ⊔ ℓ₂)
+  _&_ : ∀ {s : StateThread} {ℓ₁ ℓ₂} → Condition s ℓ₁ → Condition s ℓ₂ → Condition s (ℓ₁ ⊔ ℓ₂)
   𝟏        & ys = ys
   (x ⨾ xs) & ys = x ⨾ xs & ys
 
   infixr -1 [_]&[_]↦[_]⨾[_]⨾⨾_
-  data Restructuring {s : StateThread} : {ℓ₁ ℓ₂ : Level} → Condition s ℓ₁ → Condition s ℓ₂ → SSetω₀ where
-    ∎ : {ℓ : Level} {discard : Condition s ℓ} → Restructuring discard 𝟏
+  data Restructuring {s : StateThread} : ∀ {ℓ₁ ℓ₂} → Condition s ℓ₁ → Condition s ℓ₂ → SSetω₀ where
+    ∎ : ∀ {ℓ} {discard : Condition s ℓ} → Restructuring discard 𝟏
     [_]&[_]↦[_]⨾[_]⨾⨾_ :
-      {ℓl ℓ ℓr ℓrest : Level}
+      ∀ {ℓl ℓ ℓr ℓrest}
       (l : Condition s ℓl)
       (v : Ref s) {A : Set ℓ} {x y : A} (e : x ≡ y)
-      (r : Condition s ℓr)
-      {rest : Condition s ℓrest} → Restructuring (l & r) rest →
+      (r : Condition s ℓr) {rest : Condition s ℓrest} →
+      Restructuring (l & r) rest →
       Restructuring (l & v ↦ x ⨾ r) (v ↦ y ⨾ rest)
-
-  infixr 0 _⨾⨾_
-  pattern _⨾⨾_ v r = v ↦ _ ⨾ r
   infixr -1 [_]&[_]⨾[_]⨾⨾_
   pattern [_]&[_]⨾[_]⨾⨾_ l v r p = [_]&[_]↦[_]⨾[_]⨾⨾_ l v refl r p
 

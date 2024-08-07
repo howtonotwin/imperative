@@ -55,7 +55,7 @@ private
       Ref : StateThread → Set lzero
       Ref _ = Unsafe.STRef
 
-      open Imperative.Spec StateThread Ref public
+      open Imperative.Spec StateThread Ref
 
       Program :
         ∀ {ℓA ℓpre ℓpost} (s : StateThread) (A : Set ℓA)
