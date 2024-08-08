@@ -2,7 +2,6 @@ module Imperative.ST where
 
 open import Agda.Primitive
 open import Data.Unit
-open import Level
 
 import Imperative
 import Realizer as SafeRealizer
@@ -57,50 +56,48 @@ private
 
       open Imperative.Spec StateThread Ref
 
-      Program :
-        ∀ {ℓA ℓpre ℓpost} (s : StateThread) (A : Set ℓA)
-        (@0 pre : Condition s ℓpre) (@0 post : A → Condition s ℓpost) → Set (ℓA ⊔ ℓpre ⊔ ℓpost)
-      Program {ℓA} {ℓpre} {ℓpost} _ A _ _ = Lift (ℓA ⊔ ℓpre ⊔ ℓpost) (Unsafe.ST A)
+      Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
+      Program _ A _ _ = Unsafe.ST A
 
       runProgram :
-        ∀ {ℓA ℓpost} {A : Set ℓA} {@0 post : (s : StateThread) → A → Condition s ℓpost} →
+        ∀ {ℓ} {A : Set ℓ} {@0 post : (s : StateThread) → A → Condition s} →
         ({s : StateThread} → Program s A 𝟏 (post s)) → A
-      runProgram x = Unsafe.runST (x {Unsafe.mkStateThread} .lower)
+      runProgram x = Unsafe.runST (x {Unsafe.mkStateThread})
 
       return :
-        ∀ {s : StateThread} {ℓA ℓcond} {A : Set ℓA} {@0 cond : A → Condition s ℓcond}
+        ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 cond : A → Condition s}
         (x : A) → Program s A (cond x) cond
-      return x .lower = Unsafe.returnST x
+      return x = Unsafe.returnST x
 
       _>>=_ :
-        ∀ {s : StateThread} {ℓA ℓB ℓpre ℓmid ℓpost} {A : Set ℓA} {B : Set ℓB}
-        {@0 pre : Condition s ℓpre} {@0 mid : A → Condition s ℓmid} {@0 post : B → Condition s ℓpost} →
+        ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}
+        {@0 pre : Condition s} {@0 mid : A → Condition s} {@0 post : B → Condition s} →
         Program s A pre mid → ((x : A) → Program s B (mid x) post) → Program s B pre post
-      (x >>= f) .lower = Unsafe.thenST (x .lower) λ x → f x .lower
+      _>>=_ = Unsafe.thenST
 
       read :
         ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 x : A}
         (r : Ref s) → Program s (Realizer x) (r ↦ x ⨾ 𝟏) (λ _ → r ↦ x ⨾ 𝟏)
-      read r .lower = Unsafe.thenST (Unsafe.readSTRef r) λ x → Unsafe.returnST (Unsafe.realize x)
+      read r = Unsafe.thenST (Unsafe.readSTRef r) λ x → Unsafe.returnST (Unsafe.realize x)
 
       write :
-        ∀ {s : StateThread} {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} {@0 x : A}
+        ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A}
         (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
-      write r y .lower = Unsafe.writeSTRef r y
+      write r y = Unsafe.writeSTRef r y
 
       alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
-      alloc .lower = Unsafe.newSTRef
+      alloc = Unsafe.newSTRef
 
       frame :
-        ∀ {s : StateThread} {ℓA ℓpre ℓpost ℓside} {A : Set ℓA}
-        (@0 side : Condition s ℓside) {@0 pre : Condition s ℓpre} {@0 post : A → Condition s ℓpost} →
+        ∀ {s : StateThread} {ℓ} {A : Set ℓ}
+        (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
         Program s A pre post → Program s A (side & pre) (λ x → side & post x)
-      frame _ x .lower = x .lower
+      frame _ x = x
 
       restructure :
-        ∀ {s : StateThread} {ℓpre ℓpost} {@0 pre : Condition s ℓpre} {@0 post : Condition s ℓpost} →
+        ∀ {s : StateThread} {@0 pre post : Condition s} →
         @0 Restructuring pre post → Program s ⊤ pre (λ _ → post)
-      restructure _ .lower = Unsafe.returnST tt
+      restructure _ = Unsafe.returnST tt
 
 ST : Imperative.Impl
 ST = record { STImpl }

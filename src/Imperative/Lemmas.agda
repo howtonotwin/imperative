@@ -18,9 +18,7 @@ import Imperative
 module Spec (StateThread : SSetω₀) (Ref : StateThread → Set lzero) where
   open Imperative.Spec StateThread Ref
 
-  liveRefs& :
-    ∀ {s : StateThread} {ℓ₁ ℓ₂} (xs : Condition s ℓ₁) (ys : Condition s ℓ₂) →
-    liveRefs (xs & ys) ≡ liveRefs xs ++ liveRefs ys
+  liveRefs& : {s : StateThread} (xs : Condition s) (ys : Condition s) → liveRefs (xs & ys) ≡ liveRefs xs ++ liveRefs ys
   liveRefs& 𝟏         ys = refl
   liveRefs& (x ⨾⨾ xs) ys = cong (x ∷_) (liveRefs& xs ys)
 

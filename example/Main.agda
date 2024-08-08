@@ -5,7 +5,7 @@ open import Agda.Builtin.String
 import Data.Nat.Show as ℕ
 open import Data.Maybe using (Maybe)
 open Maybe
-open import Function.Base
+open import Function
 open import IO
 
 open import Fibonacci
