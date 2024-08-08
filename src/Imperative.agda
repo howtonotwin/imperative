@@ -3,9 +3,11 @@ module Imperative where
 
 open import Agda.Primitive
 open import Data.List
+open import Data.List.Relation.Unary.Unique.Propositional
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
+open import Erased
 open import Realizer
 
 module Spec (StateThread : SSetω₀) (Ref : StateThread → Set lzero) where
@@ -78,6 +80,7 @@ record Impl : SSetω₁ where
     restructure :
       {s : StateThread} {@0 pre post : Condition s} →
       @0 Restructuring pre post → Program s ⊤ pre (λ _ → post)
+    separate : {s : StateThread} {@0 cond : Condition s} → Program s (Erased (Unique (liveRefs cond))) cond (λ _ → cond)
   _>>_ :
       ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}
       {@0 pre : Condition s} {@0 mid : A → Condition s} {@0 post : B → Condition s} →

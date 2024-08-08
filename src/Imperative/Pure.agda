@@ -20,6 +20,7 @@ open import Data.Unit
 open import Function
 open import Relation.Binary.PropositionalEquality hiding ([_])
 
+open import Erased
 import Imperative
 import Imperative.Lemmas as Lemmas
 open import Realizer
@@ -121,6 +122,9 @@ private
                 ∈.∈-++⁻ _ ∘
                 subst (_ ∈_) (liveRefs& l r)))
             alloced′)
+
+    separate : {s : StateThread} {@0 cond : Condition s} → Program s (Erased (Unique (liveRefs cond))) cond (λ _ → cond)
+    separate brk sep alloced = erased sep , sep , All.tabulate inj₁
 
 @0 Pure : Imperative.Impl
 Pure = record { PureImpl }

@@ -1,8 +1,10 @@
 module Imperative.ST where
 
 open import Agda.Primitive
+open import Data.List.Relation.Unary.Unique.Propositional
 open import Data.Unit
 
+import Erased as SafeErased
 import Imperative
 import Realizer as SafeRealizer
 
@@ -28,11 +30,20 @@ private
       realized? : (x : A) → Realizer x
     {-# FOREIGN GHC newtype Realizer ℓ a x = Realized a #-}
     {-# COMPILE GHC Realizer = data Realizer (Realized) #-}
-    postulate
-      imagined : ∀ {ℓ} {A : Set ℓ} {@0 x : A} → A → Realizer x
+    postulate imagined : ∀ {ℓ} {A : Set ℓ} {@0 x : A} → A → Realizer x
     {-# COMPILE GHC imagined = \_ _ _ -> Realized #-}
     realize : ∀ {ℓ} {A : Set ℓ} {@0 x : A} → Realizer x → SafeRealizer.Realizer x
     realize (realized? x) = SafeRealizer.realized x
+
+    record Erased {ℓ} (@0 A : Set ℓ) : Set ℓ where
+      constructor erased
+      field @0 erasedly : A
+    {-# FOREIGN GHC data Erased ℓ a = Erased #-}
+    {-# COMPILE GHC Erased = data Erased (Erased) #-}
+    postulate blank : ∀ {ℓ} (@0 A : Set ℓ) → Erased A
+    {-# COMPILE GHC blank = \_ _ -> Erased #-}
+    erase : ∀ {ℓ} {@0 A : Set ℓ} → Erased A → SafeErased.Erased A
+    erase (erased x) = SafeErased.erased x
 
     postulate
       STRef : Set lzero
@@ -45,6 +56,7 @@ private
     {-# COMPILE GHC writeSTRef = \_ _ -> coe Data.STRef.writeSTRef #-}
     {-# COMPILE GHC newSTRef = Data.STRef.newSTRef (coe ()) #-}
 
+  open SafeErased
   open SafeRealizer
 
   module STImpl where
@@ -95,9 +107,14 @@ private
       frame _ x = x
 
       restructure :
-        ∀ {s : StateThread} {@0 pre post : Condition s} →
+        {s : StateThread} {@0 pre post : Condition s} →
         @0 Restructuring pre post → Program s ⊤ pre (λ _ → post)
       restructure _ = Unsafe.returnST tt
+
+      separate :
+        {s : StateThread} {@0 cond : Condition s} →
+        Program s (Erased (Unique (liveRefs cond))) cond (λ _ → cond)
+      separate = Unsafe.returnST (Unsafe.erase (Unsafe.blank _))
 
 ST : Imperative.Impl
 ST = record { STImpl }
