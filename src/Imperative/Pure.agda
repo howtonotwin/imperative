@@ -27,7 +27,7 @@ open import Realizer
 
 private
   module @0 PureImpl where
-    record StateThread : SSetω₀ where
+    record StateThread : Setω₀ where
     Ref : StateThread → Set lzero
     Ref _ = ℕ
     open Imperative.Spec StateThread Ref

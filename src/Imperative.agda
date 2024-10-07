@@ -10,9 +10,9 @@ open import Relation.Binary.PropositionalEquality
 open import Erased
 open import Realizer
 
-module Spec (StateThread : SSetω₀) (Ref : StateThread → Set lzero) where
+module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   infix 1 _↦_
-  record Assignment (s : StateThread) : SSetω₀ where
+  record Assignment (s : StateThread) : Setω₀ where
     constructor _↦_
     field
       var : Ref s
@@ -21,7 +21,7 @@ module Spec (StateThread : SSetω₀) (Ref : StateThread → Set lzero) where
       content : contentType
 
   infixr 0 _⨾_
-  data Condition (s : StateThread) : SSetω₀ where
+  data Condition (s : StateThread) : Setω₀ where
     𝟏   : Condition s
     _⨾_ : Assignment s → Condition s → Condition s
   infixr 0 _⨾⨾_
@@ -36,22 +36,28 @@ module Spec (StateThread : SSetω₀) (Ref : StateThread → Set lzero) where
   𝟏        & ys = ys
   (x ⨾ xs) & ys = x ⨾ xs & ys
 
-  infixr -1 [_]&[_]↦[_]⨾[_]⨾⨾_
-  data Restructuring {s : StateThread} : Condition s → Condition s → SSetω₀ where
+  infixr -1 [_]&[_]⨾[_]⨾⨾_
+  data Restructuring {s : StateThread} : Condition s → Condition s → Setω₀ where
     ∎ : {discard : Condition s} → Restructuring discard 𝟏
-    [_]&[_]↦[_]⨾[_]⨾⨾_ :
-      ∀ {ℓ}
+    [_]&[_]⨾[_]⨾⨾_ :
+      ∀ (l : Condition s)
+      (v : Ref s) {ℓ} {A : Set ℓ} {x : A}
+      (r : Condition s) {rest : Condition s} →
+      Restructuring (l & r) rest →
+      Restructuring (l & v ↦ x ⨾ r) (v ↦ x ⨾ rest)
+  infixr -1 [_]&[_]↦[_]⨾[_]⨾⨾_
+  [_]&[_]↦[_]⨾[_]⨾⨾_ :
+      ∀ {s : StateThread}
       (l : Condition s)
-      (v : Ref s) {A : Set ℓ} {x y : A} (e : x ≡ y)
+      (v : Ref s) {ℓ} {A : Set ℓ} {x y : A} (e : x ≡ y)
       (r : Condition s) {rest : Condition s} →
       Restructuring (l & r) rest →
       Restructuring (l & v ↦ x ⨾ r) (v ↦ y ⨾ rest)
-  infixr -1 [_]&[_]⨾[_]⨾⨾_
-  pattern [_]&[_]⨾[_]⨾⨾_ l v r p = [_]&[_]↦[_]⨾[_]⨾⨾_ l v refl r p
+  [ l ]&[ v ]↦[ refl ]⨾[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ r ]⨾⨾ p
 
-record Impl : SSetω₁ where
+record Impl : Setω₁ where
   field
-    StateThread : SSetω₀
+    StateThread : Setω₀
     Ref : StateThread → Set lzero
   open Spec StateThread Ref public
   field

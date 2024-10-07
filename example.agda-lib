@@ -1,3 +1,3 @@
 include: example
 depend: standard-library imperative
-flags: --erasure --cubical-compatible --two-level
+flags: --erasure

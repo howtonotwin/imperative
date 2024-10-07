@@ -13,7 +13,7 @@ import Realizer as SafeRealizer
 
 private
   module Unsafe where
-    record StateThread : SSetω₀ where constructor mkStateThread
+    record StateThread : Setω₀ where constructor mkStateThread
 
     postulate
       ST : ∀ {ℓ} → Set ℓ → Set ℓ
@@ -61,7 +61,7 @@ private
 
   module STImpl where
     abstract
-      StateThread : SSetω₀
+      StateThread : Setω₀
       StateThread = Unsafe.StateThread
       Ref : StateThread → Set lzero
       Ref _ = Unsafe.STRef
