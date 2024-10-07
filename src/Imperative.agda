@@ -4,11 +4,14 @@ module Imperative where
 open import Agda.Primitive
 open import Data.List
 open import Data.List.Relation.Unary.Unique.Propositional
+open import Data.Nat
+open import Data.Nat.Properties
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
 open import Erased
 open import Realizer
+import ArrayValue as SpecArrayValue
 
 module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   infix 1 _↦_
@@ -35,6 +38,13 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   _&_ : {s : StateThread} → Condition s → Condition s → Condition s
   𝟏        & ys = ys
   (x ⨾ xs) & ys = x ⨾ xs & ys
+
+  module ArrayValue = SpecArrayValue
+  open ArrayValue using (ArrayValue; []; _∷_) public
+  infix 1 _↦＊_
+  _↦＊_ : {s : StateThread} {n : ℕ} → ((i : ℕ) → .(i < n) → Ref s) → ArrayValue n → Condition s
+  f ↦＊ []     = 𝟏
+  f ↦＊ x ∷ xs = f zero z<s ↦ x ⨾ (λ i i<n → f (suc i) (s<s i<n)) ↦＊ xs
 
   infixr -1 [_]&[_]⨾[_]⨾⨾_
   data Restructuring {s : StateThread} : Condition s → Condition s → Setω₀ where
@@ -78,7 +88,9 @@ record Impl : Setω₁ where
     write :
       ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A}
       (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
-    alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
+    allocArray :
+      {s : StateThread} (n : ℕ) →
+      Program s ((i : ℕ) → .(i < n) → Ref s) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
     frame :
       ∀ {s : StateThread} {ℓ} {A : Set ℓ}
       (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
@@ -98,6 +110,10 @@ record Impl : Setω₁ where
     ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A} {@0 y : B}
     (r : Ref s) → Realizer y → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
   writeRealized r (realized y) = write r y
+  alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
+  alloc = do
+    rs ← allocArray 1
+    return (rs 0 _)
   init : ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 x : A} → Realizer x → Program s (Ref s) 𝟏 (λ r → r ↦ x ⨾ 𝟏)
   init x = do
     v ← alloc

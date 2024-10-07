@@ -68,9 +68,6 @@ private
       (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
     write r y brk sep alloced = tt , sep , inj₁ (here refl) ∷ []
 
-    alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
-    alloc brk sep alloced = brk , [] ∷ [] , inj₂ ≤-refl ∷ []
-
     frame :
       ∀ {s : StateThread} {ℓ} {A : Set ℓ}
       (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
@@ -93,11 +90,26 @@ private
               (All.tabulate (inj₁ ∘ subst (_ ∈_) (sym (liveRefs& side pre)) ∘ ∈.∈-++⁺ˡ))
               (All.map (⊎.map₁ (subst (_ ∈_) (sym (liveRefs& side pre)) ∘ ∈.∈-++⁺ʳ _)) alloced′))
 
+
+    private
+      alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
+      alloc brk sep alloced = brk , [] ∷ [] , inj₂ ≤-refl ∷ []
+    allocArray :
+      {s : StateThread} (n : ℕ) →
+      Program s ((i : ℕ) → .(i < n) → Ref s) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
+    allocArray zero    = return λ i ()
+    allocArray (suc n) = do
+      r ← alloc
+      rs ← frame (r ↦ tt ⨾ 𝟏) (allocArray n)
+      return λ where
+        zero    _     → r
+        (suc i) si<sn → rs i (s<s⁻¹ si<sn)
+
     restructure :
       {s : StateThread} {@0 pre post : Condition s} →
       @0 Restructuring pre post → Program s ⊤ pre (λ _ → post)
-    restructure ∎                              brk sep alloced = tt , [] , []
-    restructure ([ l ]&[ v ]↦[ _ ]⨾[ r ]⨾⨾ rs) brk sep alloced =
+    restructure ∎                        brk sep alloced = tt , [] , []
+    restructure ([ l ]&[ v ]⨾[ r ]⨾⨾ rs) brk sep alloced =
       let sepₗ , sepᵥᵣ , sepₗ,ᵥᵣ = Lemmas.AllPairs.++⁻ (subst Unique (liveRefs& l (v ⨾⨾ r)) sep) in
       let sepᵥ,ᵣ , sepᵣ = AllPairs.uncons sepᵥᵣ in
       let sepᵥ,ₗ , sepₗ,ᵣ = All.unzipWith All.uncons sepₗ,ᵥᵣ in

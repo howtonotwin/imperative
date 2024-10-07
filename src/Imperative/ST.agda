@@ -2,6 +2,7 @@ module Imperative.ST where
 
 open import Agda.Primitive
 open import Data.List.Relation.Unary.Unique.Propositional
+open import Data.Nat
 open import Data.Unit
 
 import Erased as SafeErased
@@ -9,12 +10,10 @@ import Imperative
 import Realizer as SafeRealizer
 
 {-# FOREIGN GHC import qualified Control.Monad.ST #-}
-{-# FOREIGN GHC import qualified Data.STRef #-}
+{-# FOREIGN GHC import qualified GHC.Arr #-}
 
 private
   module Unsafe where
-    record StateThread : Setω₀ where constructor mkStateThread
-
     postulate
       ST : ∀ {ℓ} → Set ℓ → Set ℓ
       runST : ∀ {ℓ} {A : Set ℓ} → ST A → A
@@ -46,25 +45,29 @@ private
     erase (erased x) = SafeErased.erased x
 
     postulate
-      STRef : Set lzero
-      readSTRef : ∀ {ℓ} {A : Set ℓ} → STRef → ST A
-      writeSTRef : ∀ {ℓ} {A : Set ℓ} → STRef → A → ST ⊤
-      newSTRef : ST STRef
-    {-# FOREIGN GHC type STRef = Data.STRef.STRef AgdaAny AgdaAny #-}
-    {-# COMPILE GHC STRef = type STRef #-}
-    {-# COMPILE GHC readSTRef = \_ _ -> coe Data.STRef.readSTRef #-}
-    {-# COMPILE GHC writeSTRef = \_ _ -> coe Data.STRef.writeSTRef #-}
-    {-# COMPILE GHC newSTRef = Data.STRef.newSTRef (coe ()) #-}
+      STArray : Set lzero
+      readSTArray : ∀ {ℓ} {A : Set ℓ} → STArray → ℕ → ST A
+      writeSTArray : ∀ {ℓ} {A : Set ℓ} → STArray → ℕ → A → ST ⊤
+      newSTArray : (n : ℕ) → ST STArray
+    {-# FOREIGN GHC type STArray = GHC.Arr.STArray AgdaAny Integer AgdaAny #-}
+    {-# COMPILE GHC STArray = type STArray #-}
+    {-# COMPILE GHC readSTArray =
+      \_ _ -> coe (GHC.Arr.readSTArray :: GHC.Arr.STArray s Integer e -> Integer -> Control.Monad.ST.ST s e) #-}
+    {-# COMPILE GHC writeSTArray =
+      \_ _ -> coe (GHC.Arr.writeSTArray :: GHC.Arr.STArray s Integer e -> Integer -> e -> Control.Monad.ST.ST s ()) #-}
+    {-# COMPILE GHC newSTArray = \n -> coe (GHC.Arr.newSTArray (0, n - 1) ()) #-}
 
   open SafeErased
   open SafeRealizer
 
   module STImpl where
     abstract
-      StateThread : Setω₀
-      StateThread = Unsafe.StateThread
-      Ref : StateThread → Set lzero
-      Ref _ = Unsafe.STRef
+      record StateThread : Setω₀ where constructor mkStateThread
+      record Ref (s : StateThread) : Set lzero where
+        constructor mkRef
+        field
+          arr : Unsafe.STArray
+          ix  : ℕ
 
       open Imperative.Spec StateThread Ref
 
@@ -74,7 +77,7 @@ private
       runProgram :
         ∀ {ℓ} {A : Set ℓ} {@0 post : (s : StateThread) → A → Condition s} →
         ({s : StateThread} → Program s A 𝟏 (post s)) → A
-      runProgram x = Unsafe.runST (x {Unsafe.mkStateThread})
+      runProgram x = Unsafe.runST (x {mkStateThread})
 
       return :
         ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 cond : A → Condition s}
@@ -90,15 +93,17 @@ private
       read :
         ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 x : A}
         (r : Ref s) → Program s (Realizer x) (r ↦ x ⨾ 𝟏) (λ _ → r ↦ x ⨾ 𝟏)
-      read r = Unsafe.thenST (Unsafe.readSTRef r) λ x → Unsafe.returnST (Unsafe.realize x)
+      read (mkRef a i) = Unsafe.thenST (Unsafe.readSTArray a i) λ x → Unsafe.returnST (Unsafe.realize x)
 
       write :
         ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A}
         (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
-      write r y = Unsafe.writeSTRef r y
+      write (mkRef a i) y = Unsafe.writeSTArray a i y
 
-      alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
-      alloc = Unsafe.newSTRef
+      allocArray :
+        {s : StateThread} (n : ℕ) →
+        Program s ((i : ℕ) → .(i < n) → Ref s) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
+      allocArray n = Unsafe.thenST (Unsafe.newSTArray n) λ a → Unsafe.returnST λ i i<n → mkRef a i
 
       frame :
         ∀ {s : StateThread} {ℓ} {A : Set ℓ}
