@@ -90,7 +90,6 @@ private
               (All.tabulate (inj₁ ∘ subst (_ ∈_) (sym (liveRefs& side pre)) ∘ ∈.∈-++⁺ˡ))
               (All.map (⊎.map₁ (subst (_ ∈_) (sym (liveRefs& side pre)) ∘ ∈.∈-++⁺ʳ _)) alloced′))
 
-
     private
       alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
       alloc brk sep alloced = brk , [] ∷ [] , inj₂ ≤-refl ∷ []
