@@ -39,10 +39,12 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   𝟏        & ys = ys
   (x ⨾ xs) & ys = x ⨾ xs & ys
 
+  Array : StateThread → ℕ → Set lzero
+  Array s n = (i : ℕ) → .(i < n) → Ref s
   module ArrayValue = SpecArrayValue
   open ArrayValue using (ArrayValue; []; _∷_) public
   infix 1 _↦＊_
-  _↦＊_ : {s : StateThread} {n : ℕ} → ((i : ℕ) → .(i < n) → Ref s) → ArrayValue n → Condition s
+  _↦＊_ : {s : StateThread} {n : ℕ} → Array s n → ArrayValue n → Condition s
   f ↦＊ []     = 𝟏
   f ↦＊ x ∷ xs = f zero z<s ↦ x ⨾ (λ i i<n → f (suc i) (s<s i<n)) ↦＊ xs
 
@@ -90,7 +92,7 @@ record Impl : Setω₁ where
       (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
     allocArray :
       {s : StateThread} (n : ℕ) →
-      Program s ((i : ℕ) → .(i < n) → Ref s) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
+      Program s (Array s n) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
     frame :
       ∀ {s : StateThread} {ℓ} {A : Set ℓ}
       (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
