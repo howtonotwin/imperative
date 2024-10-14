@@ -1,4 +1,4 @@
-{-# OPTIONS --safe --warning=noUnsupportedIndexedMatch #-}
+{-# OPTIONS --safe #-}
 module Imperative.Lemmas where
 
 open import Agda.Primitive

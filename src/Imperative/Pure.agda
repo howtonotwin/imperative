@@ -96,8 +96,8 @@ private
     restructure :
       {s : StateThread} {@0 pre post : Condition s} →
       @0 Restructuring pre post → Program s ⊤ pre (λ _ → post)
-    restructure ∎                              brk sep alloced = tt , [] , []
-    restructure ([ l ]&[ v ]↦[ _ ]⨾[ r ]⨾⨾ rs) brk sep alloced =
+    restructure ∎                        brk sep alloced = tt , [] , []
+    restructure ([ l ]&[ v ]⨾[ r ]⨾⨾ rs) brk sep alloced =
       let sepₗ , sepᵥᵣ , sepₗ,ᵥᵣ = Lemmas.AllPairs.++⁻ (subst Unique (liveRefs& l (v ⨾⨾ r)) sep) in
       let sepᵥ,ᵣ , sepᵣ = AllPairs.uncons sepᵥᵣ in
       let sepᵥ,ₗ , sepₗ,ᵣ = All.unzipWith All.uncons sepₗ,ᵥᵣ in
