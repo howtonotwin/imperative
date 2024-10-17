@@ -50,7 +50,7 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
 
   infixr -1 [_]&[_]⨾[_]⨾⨾_
   data Restructuring {s : StateThread} : Condition s → Condition s → Setω₀ where
-    ∎ : {discard : Condition s} → Restructuring discard 𝟏
+    ∎ : {discards : Condition s} → Restructuring discards 𝟏
     [_]&[_]⨾[_]⨾⨾_ :
       ∀ (l : Condition s)
       (v : Ref s) {ℓ} {A : Set ℓ} {x : A}
@@ -96,7 +96,7 @@ record Impl : Setω₁ where
     frame :
       ∀ {s : StateThread} {ℓ} {A : Set ℓ}
       (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
-      Program s A pre post → Program s A (side & pre) (λ x → side & post x)
+      Program s A pre post → Program s A (pre & side) (λ x → post x & side)
     restructure :
       {s : StateThread} {@0 pre post : Condition s} →
       @0 Restructuring pre post → Program s ⊤ pre (λ _ → post)

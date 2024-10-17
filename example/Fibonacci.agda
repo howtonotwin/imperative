@@ -41,22 +41,23 @@ module _ (I : Imperative.Impl) (open Imperative.Impl I) where
   fibWork n lo hi zero    eqLo eqHi =
     restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
   fibWork n lo hi (suc m) eqLo eqHi = do
-    oldHi ← frame (lo ⨾⨾ 𝟏) (read hi)
-    restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ ∎)
     oldLo ← frame (hi ⨾⨾ 𝟏) (read lo)
-    frame (hi ⨾⨾ 𝟏) (writeRealized lo oldHi)
-    restructure ([ hi ⨾⨾ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ ∎)
+    restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ ∎)
+    oldHi ← frame (lo ⨾⨾ 𝟏) (read hi)
     frame (lo ⨾⨾ 𝟏) (writeRealized hi !! ⦇ oldLo + oldHi ⦈) -- be strict or suffer a space leak!
+    restructure ([ hi ⨾⨾ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ ∎)
+    frame (hi ⨾⨾ 𝟏) (writeRealized lo oldHi)
     fibWork (suc n) lo hi m (cong fib (+-suc m n) ∙ eqLo) (cong fib (+-suc m (suc n)) ∙ eqHi)
 
   -- the stuff that goes around the loop
   calcFib : {s : StateThread} (n : ℕ) → Program s (Realizer (fib n)) 𝟏 (λ _ → 𝟏)
   calcFib zero    = return ⦇ 0 ⦈
   calcFib (suc n) = do
-    lo ← init ⦇ 0 ⦈
-    hi ← frame (lo ⨾⨾ 𝟏) (init ⦇ 1 ⦈)
-    fibWork 0 lo hi n refl (cong fib (+-comm n 1))
-    ret ← frame (lo ⨾⨾ 𝟏) (read hi)
+    hi ← init ⦇ 1 ⦈
+    lo ← frame (hi ⨾⨾ 𝟏) (init ⦇ 0 ⦈)
+    fibWork 0 lo hi n refl refl
+    restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]↦[ cong fib (+-comm n 1) ]⨾[ 𝟏 ]⨾⨾ ∎)
+    ret ← read hi
     restructure ∎
     return ret
 

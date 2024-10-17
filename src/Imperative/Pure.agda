@@ -71,24 +71,24 @@ private
     frame :
       ∀ {s : StateThread} {ℓ} {A : Set ℓ}
       (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
-      Program s A pre post → Program s A (side & pre) (λ x → side & post x)
+      Program s A pre post → Program s A (pre & side) (λ x → post x & side)
     frame side {pre} {post} p brk sep alloced =
-      let sepₗ , sepᵣ , sepₗᵣ = Lemmas.AllPairs.++⁻ (subst Unique (liveRefs& side pre) sep) in
-      let allocedₗ , allocedᵣ = All.++⁻ _ (subst (All (_< brk)) (liveRefs& side pre) alloced) in
-      let x , sep′ , alloced′ = p brk sepᵣ allocedᵣ in
+      let sepₗ , sepᵣ , sepₗᵣ = Lemmas.AllPairs.++⁻ (subst Unique (liveRefs& pre side) sep) in
+      let allocedₗ , allocedᵣ = All.++⁻ _ (subst (All (_< brk)) (liveRefs& pre side) alloced) in
+      let x , sep′ , alloced′ = p brk sepₗ allocedₗ in
       λ where
         .proj₁        → x
         .proj₂ .proj₁ →
-          subst Unique (sym (liveRefs& side (post x)))
-            (AllPairs.++⁺ sepₗ sep′
-              (All.zipWith
-                (λ (x∉pre , x<brk) → All.map [ All.lookup x∉pre , flip <-irrefl ∘ <-≤-trans x<brk ] alloced′)
-                (sepₗᵣ , allocedₗ)))
+          subst Unique (sym (liveRefs& (post x) side))
+            (AllPairs.++⁺ sep′ sepᵣ
+              (All.map
+                [ All.lookup sepₗᵣ , (λ brk≤ → All.map (λ <brk n → <-irrefl (sym n) (<-≤-trans <brk brk≤)) allocedᵣ) ]
+                alloced′))
         .proj₂ .proj₂ →
-          subst (All _) (sym (liveRefs& side (post x)))
+          subst (All _) (sym (liveRefs& (post x) side))
             (All.++⁺
-              (All.tabulate (inj₁ ∘ subst (_ ∈_) (sym (liveRefs& side pre)) ∘ ∈.∈-++⁺ˡ))
-              (All.map (⊎.map₁ (subst (_ ∈_) (sym (liveRefs& side pre)) ∘ ∈.∈-++⁺ʳ _)) alloced′))
+              (All.map (⊎.map₁ (subst (_ ∈_) (sym (liveRefs& pre side)) ∘ ∈.∈-++⁺ˡ)) alloced′)
+              (All.tabulate (inj₁ ∘ subst (_ ∈_) (sym (liveRefs& pre side)) ∘ ∈.∈-++⁺ʳ _)))
 
     private
       alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
@@ -98,8 +98,8 @@ private
       Program s ((i : ℕ) → .(i < n) → Ref s) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
     allocArray zero    = return λ i ()
     allocArray (suc n) = do
-      r ← alloc
-      rs ← frame (r ↦ tt ⨾ 𝟏) (allocArray n)
+      rs ← allocArray n
+      r ← frame _ alloc
       return λ where
         zero    _     → r
         (suc i) si<sn → rs i (s<s⁻¹ si<sn)
