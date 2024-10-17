@@ -41,12 +41,10 @@ module _ (I : Imperative.Impl) (open Imperative.Impl I) where
   fibWork n lo hi zero    eqLo eqHi =
     restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
   fibWork n lo hi (suc m) eqLo eqHi = do
-    oldLo ← frame (hi ⨾⨾ 𝟏) (read lo)
-    restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ ∎)
-    oldHi ← frame (lo ⨾⨾ 𝟏) (read hi)
-    frame (lo ⨾⨾ 𝟏) (writeRealized hi !! ⦇ oldLo + oldHi ⦈) -- be strict or suffer a space leak!
-    restructure ([ hi ⨾⨾ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ ∎)
-    frame (hi ⨾⨾ 𝟏) (writeRealized lo oldHi)
+    oldLo ← frame _ (read lo)
+    oldHi ← reframe ([ lo ⨾⨾ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ ∎) (read hi)
+    frame _ (writeRealized hi !! ⦇ oldLo + oldHi ⦈) -- be strict or suffer a space leak!
+    reframe ([ hi ⨾⨾ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ ∎) (writeRealized lo oldHi)
     fibWork (suc n) lo hi m (cong fib (+-suc m n) ∙ eqLo) (cong fib (+-suc m (suc n)) ∙ eqHi)
 
   -- the stuff that goes around the loop
