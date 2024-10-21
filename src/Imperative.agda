@@ -66,6 +66,13 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
       Restructuring (l & r) rest →
       Restructuring (l & v ↦ x ⨾ r) (v ↦ y ⨾ rest)
   [ l ]&[ v ]↦[ refl ]⨾[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ r ]⨾⨾ p
+  infixr -1 [_]&[_]&[_]⨾⨾_
+  [_]&[_]&[_]⨾⨾_ :
+    {s : StateThread} (l m r : Condition s) {rest : Condition s} →
+    Restructuring (l & r) rest →
+    Restructuring (l & m & r) (m & rest)
+  [ l ]&[ 𝟏         ]&[ r ]⨾⨾ p = p
+  [ l ]&[ v ↦ _ ⨾ m ]&[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ m & r ]⨾⨾ [ l ]&[ m ]&[ r ]⨾⨾ p
   [_]∎ : {s : StateThread} (c : Condition s) → Restructuring c c
   [ 𝟏         ]∎ = ∎
   [ v ↦ _ ⨾ c ]∎ = [ 𝟏 ]&[ v ]⨾[ c ]⨾⨾ [ c ]∎

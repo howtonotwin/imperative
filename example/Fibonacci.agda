@@ -8,6 +8,7 @@ open import Function.Strict renaming (_$!_ to infixl 9999 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
 import Imperative
+open import Imperative.Macros
 open import Realizer
 
 -- a functional specification, inefficient and therefore erased
@@ -39,12 +40,12 @@ module _ (I : Imperative.Impl) (open Imperative.Impl I) where
       (lo ↦ fib n ⨾ hi ↦ fib (suc n) ⨾ 𝟏)
       (λ _ → lo ↦ outLo ⨾ hi ↦ outHi ⨾ 𝟏)
   fibWork n lo hi zero    eqLo eqHi =
-    restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
+    restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎) -- a manual (nontrivial) proof about the program state
   fibWork n lo hi (suc m) eqLo eqHi = do
-    oldLo ← frame _ (read lo)
-    oldHi ← reframe ([ lo ⨾⨾ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ ∎) (read hi)
-    frame _ (writeRealized hi !! ⦇ oldLo + oldHi ⦈) -- be strict or suffer a space leak!
-    reframe ([ hi ⨾⨾ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ ∎) (writeRealized lo oldHi)
+    oldLo ← reframe restructure! (read lo) -- restructure! is a macro that can prove certain trivial facts about the state
+    oldHi ← reframe restructure! (read hi)
+    reframe restructure! (writeRealized hi !! ⦇ oldLo + oldHi ⦈) -- be strict or suffer a space leak!
+    reframe restructure! (writeRealized lo oldHi)
     fibWork (suc n) lo hi m (cong fib (+-suc m n) ∙ eqLo) (cong fib (+-suc m (suc n)) ∙ eqHi)
 
   -- the stuff that goes around the loop
