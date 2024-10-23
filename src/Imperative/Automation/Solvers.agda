@@ -1,5 +1,5 @@
 {-# OPTIONS --safe #-}
-module Imperative.Macros where
+module Imperative.Automation.Solvers where
 
 open import Agda.Builtin.Reflection using (Telescope; workOnTypes)
 open import Agda.Primitive

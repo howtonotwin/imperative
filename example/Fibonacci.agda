@@ -8,7 +8,7 @@ open import Function.Strict renaming (_$!_ to infixl 9999 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
 import Imperative
-open import Imperative.Macros
+open import Imperative.Automation.Solvers
 open import Realizer
 
 -- a functional specification, inefficient and therefore erased
