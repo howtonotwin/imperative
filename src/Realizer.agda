@@ -22,3 +22,6 @@ _<*>_ :
   ∀ {ℓA ℓB} {A : Set ℓA} {B : @0 A → Set ℓB} {@0 f : (x : A) → B x} {@0 x : A} →
   Realizer f → Realizer x → Realizer (f x)
 realized f <*> realized x = realized (f x)
+
+rethink : ∀ {ℓ} {A : Set ℓ} {@0 x y : A} → Realizer x → @0 x ≡ y → Realizer y
+rethink (realized x) refl = realized x

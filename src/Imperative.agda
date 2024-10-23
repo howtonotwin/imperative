@@ -123,9 +123,9 @@ record Impl : Setω₁ where
       ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}
       {@0 pre : Condition s} {@0 mid : A → Condition s} {@0 post : B → Condition s} →
       Program s A pre mid → ({x : A} → Program s B (mid x) post) → Program s B pre post
-  p₁ >> p₂ = do
-    x ← p₁
-    p₂ {x}
+  p >> q = do
+    x ← p
+    q {x}
   writeRealized :
     ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A} {@0 y : B}
     (r : Ref s) → Realizer y → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)

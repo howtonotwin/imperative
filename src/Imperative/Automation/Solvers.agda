@@ -135,26 +135,28 @@ private
           vArg subhole ∷ []))
       restructure-loop (before ++ after) ps subhole
 
+restructure!-tactic : Term → TC ⊤
+restructure!-tactic hole = do
+  stateThreadTy ← checkType unknown unknown
+  refCon ← checkType unknown unknown
+  stateThread ← checkType unknown unknown
+  input ← checkType unknown unknown
+  output ← checkType unknown unknown
+  checkType hole
+    (def (quote Imperative.Spec.Restructuring) (
+      vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
+      vArg input ∷ vArg output ∷ []))
+  let module Ctx = InProgramContext stateThreadTy refCon stateThread
+
+  inputParts , blocker1 ← Ctx.decomposeCondition input
+  debugPrint "imperative.restructure!" 20 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
+  outputParts , blocker2 ← Ctx.decomposeCondition output
+  debugPrint "imperative.restructure!" 20 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
+  blockTC′ (blockerAll′ (catMaybes (blocker1 ∷ blocker2 ∷ [])))
+
+  debugPrint "imperative.restructure!" 10 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
+  debugPrint "imperative.restructure!" 10 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
+  Ctx.restructure-loop inputParts outputParts hole
 macro
   restructure! : Term → TC ⊤
-  restructure! hole = do
-    stateThreadTy ← checkType unknown unknown
-    refCon ← checkType unknown unknown
-    stateThread ← checkType unknown unknown
-    input ← checkType unknown unknown
-    output ← checkType unknown unknown
-    checkType hole
-      (def (quote Imperative.Spec.Restructuring) (
-        vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
-        vArg input ∷ vArg output ∷ []))
-    let module Ctx = InProgramContext stateThreadTy refCon stateThread
-
-    inputParts , blocker1 ← Ctx.decomposeCondition input
-    debugPrint "imperative.restructure!" 20 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
-    outputParts , blocker2 ← Ctx.decomposeCondition output
-    debugPrint "imperative.restructure!" 20 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
-    blockTC′ (blockerAll′ (catMaybes (blocker1 ∷ blocker2 ∷ [])))
-
-    debugPrint "imperative.restructure!" 10 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
-    debugPrint "imperative.restructure!" 10 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
-    Ctx.restructure-loop inputParts outputParts hole
+  restructure! = restructure!-tactic
