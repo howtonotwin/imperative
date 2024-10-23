@@ -5,6 +5,7 @@ open import Data.List.Relation.Unary.Unique.Propositional
 open import Data.Nat
 open import Data.Unit
 
+open import ArrayValue
 import Erased as SafeErased
 import Imperative
 import Realizer as SafeRealizer

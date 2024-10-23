@@ -9,9 +9,9 @@ open import Data.Nat.Properties
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
+open import ArrayValue
 open import Erased
 open import Realizer
-import ArrayValue as SpecArrayValue
 
 module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   infix 1 _↦_
@@ -41,8 +41,6 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
 
   Array : StateThread → ℕ → Set lzero
   Array s n = (i : ℕ) → .(i < n) → Ref s
-  module ArrayValue = SpecArrayValue
-  open ArrayValue using (ArrayValue; []; _∷_) public
   infix 1 _↦＊_
   _↦＊_ : {s : StateThread} {n : ℕ} → Array s n → ArrayValue n → Condition s
   f ↦＊ []     = 𝟏

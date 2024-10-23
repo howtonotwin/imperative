@@ -20,6 +20,7 @@ open import Data.Unit
 open import Function
 open import Relation.Binary.PropositionalEquality hiding ([_])
 
+open import ArrayValue
 open import Erased
 import Imperative
 import Imperative.Lemmas as Lemmas
