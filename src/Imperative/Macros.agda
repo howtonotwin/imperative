@@ -133,7 +133,7 @@ private
           vArg unknown ∷ vArg unknown ∷
           vArg (composeCondition before) ∷ vArg (p .body) ∷ vArg (composeCondition after) ∷
           vArg subhole ∷ []))
-      restructure-loop inputParts ps subhole
+      restructure-loop (before ++ after) ps subhole
 
 macro
   restructure! : Term → TC ⊤
