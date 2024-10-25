@@ -4,9 +4,17 @@ module Imperative.Automation.SmartDo (I : Imperative.Impl) (let module I = Imper
 
 open import Data.Unit
 
+import Imperative.Lemmas as Lemmas
 open import Imperative.Automation.Solvers
 
 open I hiding (_>>=_; _>>_; return)
+open Lemmas.Spec StateThread Ref
+
+private
+  reframe :
+    ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 pre focus : Condition s} {@0 post : A → Condition s}
+    (@0 r : Restructuring pre focus) → Program s A focus post → Program s A pre (λ x → post x & discards r)
+  reframe r p = restructure (nondestructive r) I.>> frame _ p
 
 _>>=_ :
   ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}

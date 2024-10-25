@@ -75,16 +75,6 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   [ 𝟏         ]∎ = ∎
   [ v ↦ _ ⨾ c ]∎ = [ 𝟏 ]&[ v ]⨾[ c ]⨾⨾ [ c ]∎
 
-  discards : {s : StateThread} {pre post : Condition s} → Restructuring pre post → Condition s
-  discards (∎ {discards = discards}) = discards
-  discards ([ l ]&[ v ]⨾[ r ]⨾⨾ p)   = discards p
-
-  nondestructive :
-    {s : StateThread} {pre post : Condition s} (p : Restructuring pre post) →
-    Restructuring pre (post & discards p)
-  nondestructive ∎                       = [ _ ]∎
-  nondestructive ([ l ]&[ v ]⨾[ r ]⨾⨾ p) = [ l ]&[ v ]⨾[ r ]⨾⨾ nondestructive p
-
 record Impl : Setω₁ where
   field
     StateThread : Setω₀
@@ -139,9 +129,3 @@ record Impl : Setω₁ where
     v ← alloc
     writeRealized v x
     return v
-  reframe :
-    ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 pre focus : Condition s} {@0 post : A → Condition s}
-    (@0 r : Restructuring pre focus) → Program s A focus post → Program s A pre (λ x → post x & discards r)
-  reframe r p = do
-    restructure (nondestructive r)
-    frame (discards r) p

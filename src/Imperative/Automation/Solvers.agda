@@ -36,7 +36,7 @@ private
   allMetas (meta m args) = m ∷ allMetasArgs args
   allMetas _ = []
 
-  Blocker′ : Set₀
+  Blocker′ : Set lzero
   Blocker′ = Maybe Blocker
   blockerTerm′ : Term → Blocker′
   blockerTerm′ t with allMetas t
