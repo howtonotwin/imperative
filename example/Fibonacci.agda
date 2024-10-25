@@ -44,17 +44,21 @@ module _ (I : Imperative.Impl) where
     -- restructure is a no-op, but its pre- and post-conditions may differ
     -- the one argument is a proof that the post-condition is equivalent to a
     -- piece of the precondition
-    -- the allowed "moves" in such a proof (value of type Restructuring) are
-    -- * [_]&[_]↦[_]⨾[_]⨾⨾_: reorder assignment to reference to front while
-    --   replacing its value specification with an equivalent one, then use
-    --   rest of proof to produce the rest of the post-condition
-    -- * ∎: discard any pre-condition to achieve post-condition 𝟏 (must be the
-    --   last step of a proof).
-    -- replacing its specified value with
+    -- the primitive "moves" in such a proof (constructors of Restructuring) are
+    -- * [_]&[_]⨾[_]⨾⨾_: naming the arguments l, v, r, p, reorder the assignment
+    --   for reference v in the precondition (l & v ⨾⨾ r) to the front, then use
+    --   the proof p to produce the rest of the post-condition from (l & r)
+    -- * [_]╳: discard the given pre-condition to achieve post-condition 𝟏 (must
+    --   be the last step of a proof)
+    -- the following derived moves are also useful
+    -- * ╳: [_]╳ where the pre-condition is left up to inference
+    -- * ∎: [ 𝟏 ]╳, i.e. finish a proof without discarding anything
+    -- * [_]&[_]↦[_]⨾[_]⨾⨾: like [_]&[_]⨾[_]⨾⨾_, but also change the value
+    --   specification for the chosen reference via the given equality proof
     restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
   fibWork n lo hi (suc m) eqLo eqHi = do
     -- SmartDo uses reflection to automatically insert uses of the frame rule
-    -- this hides a _lot_ of boilerplate even in this example!
+    -- this hides a _lot_ of boilerplate: see FibonacciManual
     oldLo ← read lo
     oldHi ← read hi
     writeRealized hi !! ⦇ oldLo + oldHi ⦈ -- be strict or suffer a space leak!
