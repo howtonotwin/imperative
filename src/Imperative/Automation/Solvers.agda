@@ -11,6 +11,7 @@ open import Data.Unit
 open import Reflection renaming (normalise to normalize)
 
 import Imperative
+import Imperative.Lemmas
 
 private
   allMetas : Term → List Meta
@@ -124,13 +125,17 @@ private
         vArg (p .body) ∷ vArg (composeCondition ps) ∷ [])
 
     restructure-loop : List ConditionPart → List ConditionPart → Term → TC ⊤
-    restructure-loop inputParts []       hole = unify hole (con (quote Imperative.Spec.Restructuring.∎) [])
+    restructure-loop inputParts []       hole =
+      unify hole
+        (con (quote Imperative.Spec.[_]╳) (
+          hArg stateThreadTy ∷ hArg refCon ∷ hArg stateThread ∷
+          vArg (composeCondition inputParts) ∷ []))
     restructure-loop inputParts (p ∷ ps) hole = do
       before , after ← findMatch inputParts p
       subhole ← checkType unknown unknown
       unify hole
-        (def (quote Imperative.Spec.[_]&[_]&[_]⨾⨾_) (
-          vArg unknown ∷ vArg unknown ∷
+        (def (quote Imperative.Lemmas.Spec.[_]&[_]&[_]⨾⨾_) (
+          vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
           vArg (composeCondition before) ∷ vArg (p .body) ∷ vArg (composeCondition after) ∷
           vArg subhole ∷ []))
       restructure-loop (before ++ after) ps subhole

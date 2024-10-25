@@ -69,7 +69,7 @@ module _ (I : Imperative.Impl) where
     hi ← init ⦇ 1 ⦈
     fibWork 0 lo hi n refl refl
     ret ← read hi
-    discard (lo ⨾⨾ hi ⨾⨾ 𝟏)
+    restructure [ lo ⨾⨾ hi ⨾⨾ 𝟏 ]╳
     -- return can generalize the program state over the returned value
     -- in this case we specify that the returned value should not replace any
     -- part of the state (which is empty!)

@@ -29,10 +29,6 @@ _>>_ :
     Program s A focus mid → ({x : A} → Program s B (mid x & discards r) post) → Program s B pre post
 _>>_ {r = r} p q = reframe r p I.>> q
 
--- under SmartDo, this is more effective than restructure
-discard : ∀ {s : StateThread} (@0 cond : Condition s) → Program s ⊤ cond λ _ → 𝟏
-discard _ = restructure ∎
-
--- similarly, the condition affected by return generally needs to be explicit
+-- the condition affected by return seems to need to be explicit
 return : ∀ {s : StateThread} {ℓ} {A : Set ℓ} (@0 cond : A → Condition s) (x : A) → Program s A (cond x) cond
 return _ x = I.return x

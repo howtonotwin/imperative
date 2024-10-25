@@ -22,14 +22,25 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
   liveRefs& 𝟏         ys = refl
   liveRefs& (x ⨾⨾ xs) ys = cong (x ∷_) (liveRefs& xs ys)
 
+  infixr -1 [_]&[_]&[_]⨾⨾_
+  [_]&[_]&[_]⨾⨾_ :
+    {s : StateThread} (l m r : Condition s) {rest : Condition s} →
+    Restructuring (l & r) rest →
+    Restructuring (l & m & r) (m & rest)
+  [ l ]&[ 𝟏      ]&[ r ]⨾⨾ p = p
+  [ l ]&[ v ⨾⨾ m ]&[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ m & r ]⨾⨾ [ l ]&[ m ]&[ r ]⨾⨾ p
+  [_]∎ : {s : StateThread} (c : Condition s) → Restructuring c c
+  [ 𝟏      ]∎ = ∎
+  [ v ⨾⨾ c ]∎ = [ 𝟏 ]&[ v ]⨾[ c ]⨾⨾ [ c ]∎
+
   discards : {s : StateThread} {pre post : Condition s} → Restructuring pre post → Condition s
-  discards (∎ {discards = discards}) = discards
-  discards ([ l ]&[ v ]⨾[ r ]⨾⨾ p)   = discards p
+  discards [ discards ]╳           = discards
+  discards ([ l ]&[ v ]⨾[ r ]⨾⨾ p) = discards p
 
   nondestructive :
     {s : StateThread} {pre post : Condition s} (p : Restructuring pre post) →
     Restructuring pre (post & discards p)
-  nondestructive ∎                       = [ _ ]∎
+  nondestructive [ discards ]╳           = [ discards ]∎
   nondestructive ([ l ]&[ v ]⨾[ r ]⨾⨾ p) = [ l ]&[ v ]⨾[ r ]⨾⨾ nondestructive p
 
 module ∈ {ℓ} {A : Set ℓ} where

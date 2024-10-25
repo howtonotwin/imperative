@@ -48,13 +48,15 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
 
   infixr -1 [_]&[_]⨾[_]⨾⨾_
   data Restructuring {s : StateThread} : Condition s → Condition s → Setω₀ where
-    ∎ : {discards : Condition s} → Restructuring discards 𝟏
+    [_]╳ : (discards : Condition s) → Restructuring discards 𝟏
     [_]&[_]⨾[_]⨾⨾_ :
       ∀ (l : Condition s)
       (v : Ref s) {ℓ} {A : Set ℓ} {x : A}
       (r : Condition s) {rest : Condition s} →
       Restructuring (l & r) rest →
       Restructuring (l & v ↦ x ⨾ r) (v ↦ x ⨾ rest)
+  pattern ╳ = [ _ ]╳
+  pattern ∎ = [ 𝟏 ]╳
   infixr -1 [_]&[_]↦[_]⨾[_]⨾⨾_
   [_]&[_]↦[_]⨾[_]⨾⨾_ :
       ∀ {s : StateThread}
@@ -64,16 +66,6 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
       Restructuring (l & r) rest →
       Restructuring (l & v ↦ x ⨾ r) (v ↦ y ⨾ rest)
   [ l ]&[ v ]↦[ refl ]⨾[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ r ]⨾⨾ p
-  infixr -1 [_]&[_]&[_]⨾⨾_
-  [_]&[_]&[_]⨾⨾_ :
-    {s : StateThread} (l m r : Condition s) {rest : Condition s} →
-    Restructuring (l & r) rest →
-    Restructuring (l & m & r) (m & rest)
-  [ l ]&[ 𝟏         ]&[ r ]⨾⨾ p = p
-  [ l ]&[ v ↦ _ ⨾ m ]&[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ m & r ]⨾⨾ [ l ]&[ m ]&[ r ]⨾⨾ p
-  [_]∎ : {s : StateThread} (c : Condition s) → Restructuring c c
-  [ 𝟏         ]∎ = ∎
-  [ v ↦ _ ⨾ c ]∎ = [ 𝟏 ]&[ v ]⨾[ c ]⨾⨾ [ c ]∎
 
 record Impl : Setω₁ where
   field
