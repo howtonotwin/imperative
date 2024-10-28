@@ -57,15 +57,6 @@ module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
       Restructuring (l & v ↦ x ⨾ r) (v ↦ x ⨾ rest)
   pattern ╳ = [ _ ]╳
   pattern ∎ = [ 𝟏 ]╳
-  infixr -1 [_]&[_]↦[_]⨾[_]⨾⨾_
-  [_]&[_]↦[_]⨾[_]⨾⨾_ :
-      ∀ {s : StateThread}
-      (l : Condition s)
-      (v : Ref s) {ℓ} {A : Set ℓ} {x y : A} (e : x ≡ y)
-      (r : Condition s) {rest : Condition s} →
-      Restructuring (l & r) rest →
-      Restructuring (l & v ↦ x ⨾ r) (v ↦ y ⨾ rest)
-  [ l ]&[ v ]↦[ refl ]⨾[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ r ]⨾⨾ p
 
 record Impl : Setω₁ where
   field

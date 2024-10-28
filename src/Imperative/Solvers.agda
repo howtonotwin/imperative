@@ -1,7 +1,7 @@
 {-# OPTIONS --safe #-}
-module Imperative.Automation.Solvers where
+module Imperative.Solvers where
 
-open import Agda.Builtin.Reflection using (Telescope; workOnTypes)
+open import Agda.Builtin.Reflection using (Telescope)
 open import Agda.Primitive
 open import Data.Bool
 open import Data.List as List
@@ -11,7 +11,8 @@ open import Data.Unit
 open import Reflection renaming (normalise to normalize)
 
 import Imperative
-import Imperative.Lemmas
+import Imperative.Framing
+import Imperative.Restructuring
 
 private
   allMetas : Term → List Meta
@@ -134,14 +135,14 @@ private
       before , after ← findMatch inputParts p
       subhole ← checkType unknown unknown
       unify hole
-        (def (quote Imperative.Lemmas.Spec.[_]&[_]&[_]⨾⨾_) (
+        (def (quote Imperative.Restructuring.[_]&[_]&[_]⨾⨾_) (
           vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
           vArg (composeCondition before) ∷ vArg (p .body) ∷ vArg (composeCondition after) ∷
           vArg subhole ∷ []))
       restructure-loop (before ++ after) ps subhole
 
-restructure!-tactic : Term → TC ⊤
-restructure!-tactic hole = do
+restructuring-tactic : Term → TC ⊤
+restructuring-tactic hole = do
   stateThreadTy ← checkType unknown unknown
   refCon ← checkType unknown unknown
   stateThread ← checkType unknown unknown
@@ -163,5 +164,14 @@ restructure!-tactic hole = do
   debugPrint "imperative.restructure!" 10 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
   Ctx.restructure-loop inputParts outputParts hole
 macro
-  restructure! : Term → TC ⊤
-  restructure! = restructure!-tactic
+  restructuring! : Term → TC ⊤
+  restructuring! = restructuring-tactic
+
+framing-tactic : Term → TC ⊤
+framing-tactic hole = do
+  subhole ← checkType unknown unknown
+  unify hole (con (quote Imperative.Framing.focus) (vArg subhole ∷ []))
+  restructuring-tactic subhole
+macro
+  framing! : Term → TC ⊤
+  framing! = framing-tactic

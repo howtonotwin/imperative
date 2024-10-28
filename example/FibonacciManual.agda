@@ -11,6 +11,7 @@ open import Function.Strict renaming (_$!_ to infixl 9999 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
 import Imperative
+import Imperative.ManualStyle
 open import Realizer
 
 @0 fib : ℕ → ℕ
@@ -19,7 +20,7 @@ fib 1             = 1
 fib (suc (suc n)) = fib n + fib (suc n)
 
 module _ (I : Imperative.Impl) where
-  open Imperative.Impl I
+  open Imperative.ManualStyle I
 
   fibWork :
     {s : StateThread} (@0 n : ℕ) (lo hi : Ref s) (m : ℕ)
@@ -30,12 +31,10 @@ module _ (I : Imperative.Impl) where
   fibWork n lo hi zero    eqLo eqHi =
     restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
   fibWork n lo hi (suc m) eqLo eqHi = do
-    oldLo ← frame (hi ⨾⨾ 𝟏) (read lo)
-    restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ ∎)
-    oldHi ← frame (lo ⨾⨾ 𝟏) (read hi)
-    frame (lo ⨾⨾ 𝟏) (writeRealized hi !! ⦇ oldLo + oldHi ⦈) -- be strict or suffer a space leak!
-    restructure ([ hi ⨾⨾ 𝟏 ]&[ lo ]⨾[ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]⨾[ 𝟏 ]⨾⨾ ∎)
-    frame (hi ⨾⨾ 𝟏) (writeRealized lo oldHi)
+    oldLo ← frame (>[ lo ⨾⨾ 𝟏 ]< <& (hi ⨾⨾ 𝟏)) (read lo)
+    oldHi ← frame ((lo ⨾⨾ 𝟏) &> >[ hi ⨾⨾ 𝟏 ]<) (read hi)
+    frame (>[ hi ⨾⨾ 𝟏 ]< <& (lo ⨾⨾ 𝟏)) (writeRealized hi !! ⦇ oldLo + oldHi ⦈)
+    frame ((hi ⨾⨾ 𝟏) &> >[ lo ⨾⨾ 𝟏 ]<) (writeRealized lo oldHi)
     fibWork (suc n) lo hi m (cong fib (+-suc m n) ∙ eqLo) (cong fib (+-suc m (suc n)) ∙ eqHi)
 
   -- the stuff that goes around the loop
@@ -43,7 +42,7 @@ module _ (I : Imperative.Impl) where
   calcFib zero    = return ⦇ 0 ⦈
   calcFib (suc n) = do
     hi ← init ⦇ 1 ⦈
-    lo ← frame (hi ⨾⨾ 𝟏) (init ⦇ 0 ⦈)
+    lo ← frame ((hi ⨾⨾ 𝟏) &> >𝟏<) (init ⦇ 0 ⦈)
     fibWork 0 lo hi n refl refl
     restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]↦[ cong fib (+-comm n 1) ]⨾[ 𝟏 ]⨾⨾ ╳)
     ret ← read hi

@@ -8,7 +8,7 @@ open import Function.Strict renaming (_$!_ to infixl 9999 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
 import Imperative
-import Imperative.Automation.SmartDo
+import Imperative.AutomaticStyle
 open import Realizer
 
 -- a functional specification, inefficient and therefore erased
@@ -21,11 +21,10 @@ fib (suc (suc n)) = fib n + fib (suc n)
 -- (generalized over the implementation of imperative programming itself, thus
 -- preserving --safe)
 module _ (I : Imperative.Impl) where
-  open Imperative.Impl I hiding (_>>=_; _>>_; return)
-  open Imperative.Automation.SmartDo I
+  open Imperative.AutomaticStyle I
   -- main loop, which takes condition (lo ↦ fib n ⨾ hi ↦ fib (suc n)) to the
   -- condition (lo ↦ fib (m + n) ⨾ hi ↦ fib (m + suc m))
-  -- note that this is not an imperative loop that mutates a value stored in a
+  -- note that this is not an imperative loop that mutates a counter stored in a
   -- fixed location
   -- it is simpler to purely unroll the loop by recursing on m
   -- note that in order to keep this tail recursive, there need to be
@@ -40,7 +39,7 @@ module _ (I : Imperative.Impl) where
     Program s ⊤
       (lo ↦ fib n ⨾ hi ↦ fib (suc n) ⨾ 𝟏)
       (λ _ → lo ↦ outLo ⨾ hi ↦ outHi ⨾ 𝟏)
-  fibWork n lo hi zero    eqLo eqHi =
+  fibWork n lo hi zero    eqLo eqHi = do
     -- restructure is a no-op, but its pre- and post-conditions may differ
     -- the one argument is a proof that the post-condition is equivalent to a
     -- piece of the precondition
@@ -50,12 +49,11 @@ module _ (I : Imperative.Impl) where
     --   the proof p to produce the rest of the post-condition from (l & r)
     -- * [_]╳: discard the given pre-condition to achieve post-condition 𝟏 (must
     --   be the last step of a proof)
-    -- the following derived moves are also useful
-    -- * ╳: [_]╳ where the pre-condition is left up to inference
-    -- * ∎: [ 𝟏 ]╳, i.e. finish a proof without discarding anything
-    -- * [_]&[_]↦[_]⨾[_]⨾⨾: like [_]&[_]⨾[_]⨾⨾_, but also change the value
-    --   specification for the chosen reference via the given equality proof
-    restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
+    -- here only the derived move [_]↦[_]∎ is used: "apply equality to variable"
+    restructure [ lo ]↦[ eqLo ]∎
+    restructure [ hi ]↦[ eqHi ]∎
+    -- an explicit return can be necessary to rearrange the state
+    return tt
   fibWork n lo hi (suc m) eqLo eqHi = do
     -- SmartDo uses reflection to automatically insert uses of the frame rule
     -- this hides a _lot_ of boilerplate: see FibonacciManual
@@ -67,17 +65,14 @@ module _ (I : Imperative.Impl) where
 
   -- the stuff that goes around the loop
   calcFib : {s : StateThread} (n : ℕ) → Program s (Realizer (fib n)) 𝟏 (λ _ → 𝟏)
-  calcFib zero    = return (λ _ → 𝟏) ⦇ 0 ⦈
+  calcFib zero    = return ⦇ 0 ⦈
   calcFib (suc n) = do
     lo ← init ⦇ 0 ⦈
     hi ← init ⦇ 1 ⦈
     fibWork 0 lo hi n refl refl
+    restructure [ hi ]↦[ cong fib (+-comm n 1) ]∎
     ret ← read hi
-    restructure [ lo ⨾⨾ hi ⨾⨾ 𝟏 ]╳
-    -- return can generalize the program state over the returned value
-    -- in this case we specify that the returned value should not replace any
-    -- part of the state (which is empty!)
-    return (λ _ → 𝟏) (rethink ret (cong fib (+-comm n 1)))
+    return ret
 
   -- seal away the imperativeness
   fib′ : ℕ → ℕ
