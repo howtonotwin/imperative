@@ -1,13 +1,15 @@
 {-# OPTIONS --safe #-}
 open import Agda.Primitive
-module Imperative.Restructuring (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
+open import Data.Nat
+module Imperative.Restructuring (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) where
 
 open import Relation.Binary.PropositionalEquality
 
-import Imperative
-private module Spec = Imperative.Spec StateThread Ref
-open Spec using (Restructuring; [_]╳; [_]&[_]⨾[_]⨾⨾_; ╳; ∎) public
-open Spec
+import Imperative.Specifications
+
+private module Specifications = Imperative.Specifications StateThread Array
+open Specifications using (Restructuring; [_]╳; [_]&[_]⨾[_]⨾⨾_; ╳; ∎) public
+open Specifications
 
 infixr -1 [_]&[_]↦[_]⨾[_]⨾⨾_
 [_]&[_]↦[_]⨾[_]⨾⨾_ :

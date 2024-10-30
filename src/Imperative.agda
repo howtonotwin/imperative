@@ -13,56 +13,13 @@ open import ArrayValue
 open import Erased
 open import Realizer
 
-module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
-  infix 1 _↦_
-  record Assignment (s : StateThread) : Setω₀ where
-    constructor _↦_
-    field
-      var : Ref s
-      {contentLevel} : Level
-      {contentType} : Set contentLevel
-      content : contentType
-
-  infixr 0 _⨾_
-  data Condition (s : StateThread) : Setω₀ where
-    𝟏   : Condition s
-    _⨾_ : Assignment s → Condition s → Condition s
-  infixr 0 _⨾⨾_
-  pattern _⨾⨾_ v r = v ↦ _ ⨾ r
-
-  liveRefs : {s : StateThread} → Condition s → List (Ref s)
-  liveRefs 𝟏         = []
-  liveRefs (x ⨾⨾ xs) = x ∷ liveRefs xs
-
-  infixr 0 _&_
-  _&_ : {s : StateThread} → Condition s → Condition s → Condition s
-  𝟏        & ys = ys
-  (x ⨾ xs) & ys = x ⨾ xs & ys
-
-  Array : StateThread → ℕ → Set lzero
-  Array s n = (i : ℕ) → .(i < n) → Ref s
-  infix 1 _↦＊_
-  _↦＊_ : {s : StateThread} {n : ℕ} → Array s n → ArrayValue n → Condition s
-  f ↦＊ []     = 𝟏
-  f ↦＊ x ∷ xs = f zero z<s ↦ x ⨾ (λ i i<n → f (suc i) (s<s i<n)) ↦＊ xs
-
-  infixr -1 [_]&[_]⨾[_]⨾⨾_
-  data Restructuring {s : StateThread} : Condition s → Condition s → Setω₀ where
-    [_]╳ : (discards : Condition s) → Restructuring discards 𝟏
-    [_]&[_]⨾[_]⨾⨾_ :
-      ∀ (l : Condition s)
-      (v : Ref s) {ℓ} {A : Set ℓ} {x : A}
-      (r : Condition s) {rest : Condition s} →
-      Restructuring (l & r) rest →
-      Restructuring (l & v ↦ x ⨾ r) (v ↦ x ⨾ rest)
-  pattern ╳ = [ _ ]╳
-  pattern ∎ = [ 𝟏 ]╳
+import Imperative.Specifications
 
 record Impl : Setω₁ where
   field
     StateThread : Setω₀
-    Ref : StateThread → Set lzero
-  open Spec StateThread Ref public
+    Array : StateThread → @0 ℕ → Set lzero
+  open Imperative.Specifications StateThread Array public
   field
     Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
     runProgram :
@@ -83,7 +40,7 @@ record Impl : Setω₁ where
       (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
     allocArray :
       {s : StateThread} (n : ℕ) →
-      Program s (Array s n) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
+      Program s (Array s n) 𝟏 (λ r → fullSlice r ↦＊ ArrayValue.replicate n tt)
     frame :
       ∀ {s : StateThread} {ℓ} {A : Set ℓ}
       (@0 side : Condition s) {@0 pre : Condition s} {@0 post : A → Condition s} →
@@ -105,8 +62,8 @@ record Impl : Setω₁ where
   writeRealized r (realized y) = write r y
   alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
   alloc = do
-    rs ← allocArray 1
-    return (rs 0 _)
+    a ← allocArray 1
+    return (fullSlice a)
   init : ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 x : A} → Realizer x → Program s (Ref s) 𝟏 (λ r → r ↦ x ⨾ 𝟏)
   init x = do
     v ← alloc

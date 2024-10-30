@@ -1,13 +1,14 @@
 {-# OPTIONS --safe #-}
 open import Agda.Primitive
-module Imperative.Framing (StateThread : Setω₀) (Ref : StateThread → Set lzero) {s : StateThread} where
+open import Data.Nat
+module Imperative.Framing (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) {s : StateThread} where
 
-import Imperative
+import Imperative.Specifications
 import Imperative.Lemmas
 open import LargeEq
 
-open Imperative.Spec StateThread Ref
-open Imperative.Lemmas.Spec StateThread Ref
+open Imperative.Specifications StateThread Array
+open Imperative.Lemmas.Specifications StateThread Array
 
 discards : {s : StateThread} {pre post : Condition s} → Restructuring pre post → Condition s
 discards [ discards ]╳           = discards

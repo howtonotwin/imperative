@@ -10,7 +10,7 @@ open import Data.Product
 open import Data.Unit
 open import Reflection renaming (normalise to normalize)
 
-import Imperative
+import Imperative.Specifications
 import Imperative.Framing
 import Imperative.Restructuring
 
@@ -97,7 +97,7 @@ private
       strErr "multiple matches for key " ∷ termErr (q .key) ∷
       strErr " in " ∷ listErr (List.map conditionPartErr ps))
 
-  module InProgramContext (stateThreadTy : Type) (refCon : Term) (stateThread : Term) where
+  module InProgramContext (stateThreadTy : Type) (arrCon : Term) (stateThread : Term) where
     decomposeCondition : Term → TC (List ConditionPart × Blocker′)
     decomposeCondition conditionTerm = do
       conditionNormalized ← normalize conditionTerm
@@ -109,34 +109,34 @@ private
       pure (parts , blockerAll′ (mapMaybe blockerTerm′ keys))
       where
         peel : Term → TC (List ConditionPart)
-        peel (con (quote Imperative.Spec.𝟏) (_ ∷ _ ∷ _ ∷ [])) = pure []
-        peel (con (quote Imperative.Spec._⨾_) (_ ∷ _ ∷ _ ∷ arg _ assignmentTerm ∷ arg _ rest ∷ [])) = do
+        peel (con (quote Imperative.Specifications.𝟏) (_ ∷ _ ∷ _ ∷ [])) = pure []
+        peel (con (quote Imperative.Specifications._⨾_) (_ ∷ _ ∷ _ ∷ arg _ assignmentTerm ∷ arg _ rest ∷ [])) = do
           restParts ← peel rest
-          key ← normalize (def (quote Imperative.Spec.Assignment.var) (hArg stateThreadTy ∷ hArg refCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ []))
-          let body = con (quote Imperative.Spec._⨾_) (hArg stateThreadTy ∷ hArg refCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ vArg (con (quote Imperative.Spec.𝟏) []) ∷ [])
+          key ← normalize (def (quote Imperative.Specifications.Assignment.var) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ []))
+          let body = con (quote Imperative.Specifications._⨾_) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ vArg (con (quote Imperative.Specifications.𝟏) []) ∷ [])
           pure (record { key = key; body = body } ∷ restParts)
         peel t = pure (record { key = t; body = t } ∷ [])
 
     composeCondition : List ConditionPart → Term
     composeCondition []                    =
-      con (quote Imperative.Spec.𝟏) (hArg stateThreadTy ∷ hArg refCon ∷ hArg stateThread ∷ [])
+      con (quote Imperative.Specifications.𝟏) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ [])
     composeCondition (p ∷ ps) =
-      def (quote Imperative.Spec._&_) (
-        vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
+      def (quote Imperative.Specifications._&_) (
+        vArg stateThreadTy ∷ vArg arrCon ∷ hArg stateThread ∷
         vArg (p .body) ∷ vArg (composeCondition ps) ∷ [])
 
     restructure-loop : List ConditionPart → List ConditionPart → Term → TC ⊤
     restructure-loop inputParts []       hole =
       unify hole
-        (con (quote Imperative.Spec.[_]╳) (
-          hArg stateThreadTy ∷ hArg refCon ∷ hArg stateThread ∷
+        (con (quote Imperative.Specifications.[_]╳) (
+          hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷
           vArg (composeCondition inputParts) ∷ []))
     restructure-loop inputParts (p ∷ ps) hole = do
       before , after ← findMatch inputParts p
       subhole ← checkType unknown unknown
       unify hole
         (def (quote Imperative.Restructuring.[_]&[_]&[_]⨾⨾_) (
-          vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
+          vArg stateThreadTy ∷ vArg arrCon ∷ hArg stateThread ∷
           vArg (composeCondition before) ∷ vArg (p .body) ∷ vArg (composeCondition after) ∷
           vArg subhole ∷ []))
       restructure-loop (before ++ after) ps subhole
@@ -144,15 +144,15 @@ private
 restructuring-tactic : Term → TC ⊤
 restructuring-tactic hole = do
   stateThreadTy ← checkType unknown unknown
-  refCon ← checkType unknown unknown
+  arrCon ← checkType unknown unknown
   stateThread ← checkType unknown unknown
   input ← checkType unknown unknown
   output ← checkType unknown unknown
   checkType hole
-    (def (quote Imperative.Spec.Restructuring) (
-      vArg stateThreadTy ∷ vArg refCon ∷ hArg stateThread ∷
+    (def (quote Imperative.Specifications.Restructuring) (
+      vArg stateThreadTy ∷ vArg arrCon ∷ hArg stateThread ∷
       vArg input ∷ vArg output ∷ []))
-  let module Ctx = InProgramContext stateThreadTy refCon stateThread
+  let module Ctx = InProgramContext stateThreadTy arrCon stateThread
 
   inputParts , blocker1 ← Ctx.decomposeCondition input
   debugPrint "imperative.restructure!" 20 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))

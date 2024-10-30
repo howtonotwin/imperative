@@ -4,7 +4,7 @@ module Fibonacci where
 open import Data.Nat hiding (_⊔_)
 open import Data.Nat.Properties
 open import Data.Unit
-open import Function.Strict renaming (_$!_ to infixl 9999 _!!_)
+open import Function.Strict renaming (_$!_ to infixl -10 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
 import Imperative

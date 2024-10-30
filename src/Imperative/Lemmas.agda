@@ -2,22 +2,23 @@
 module Imperative.Lemmas where
 
 open import Agda.Primitive
-open import Data.List hiding ([_])
+open import Data.List as List hiding ([_])
 open import Data.List.Membership.Propositional
 open import Data.List.Membership.Propositional.Properties
 open import Data.List.Relation.Unary.All as All
 import Data.List.Relation.Unary.All.Properties as All
 open import Data.List.Relation.Unary.AllPairs hiding (module AllPairs)
+open import Data.Nat
 open import Data.Product
 open import Data.Sum
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality hiding ([_])
 
-import Imperative
+import Imperative.Specifications
 open import LargeEq
 
-module Spec (StateThread : Setω₀) (Ref : StateThread → Set lzero) where
-  open Imperative.Spec StateThread Ref
+module Specifications (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) where
+  open Imperative.Specifications StateThread Array
 
   liveRefs& : {s : StateThread} (xs : Condition s) (ys : Condition s) → liveRefs (xs & ys) ≡ liveRefs xs ++ liveRefs ys
   liveRefs& 𝟏         ys = refl
@@ -38,3 +39,9 @@ module AllPairs {ℓA ℓR} {A : Set ℓA} {R : Rel A ℓR} where
     let l , r , lrs = ++⁻ ps in
     let ll , lr = All.++⁻ xs p in
     ll ∷ l , r , lr ∷ lrs
+
+  map⁻ :
+    ∀ {ℓB ℓS} {B : Set ℓB} {S : Rel B ℓS} {f : A → B} {xs : List A} →
+    (∀ {x y} → S (f x) (f y) → R x y) → AllPairs S (List.map f xs) → AllPairs R xs
+  map⁻ {xs = []}     f []       = []
+  map⁻ {xs = x ∷ xs} f (p ∷ ps) = All.gmap⁻ f p ∷ map⁻ f ps

@@ -12,9 +12,9 @@ import Imperative.Restructuring
 
 private module I = Imperative.Impl I
 open I hiding (_>>=_; _>>_; return) public
-open Imperative.Framing StateThread Ref
+open Imperative.Framing StateThread Array
 open Imperative.ManualStyle I using () renaming (frame to reframe)
-open Imperative.Restructuring StateThread Ref hiding (Restructuring) public
+open Imperative.Restructuring StateThread Array hiding (Restructuring) public
 
 _>>=_ :
   ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}

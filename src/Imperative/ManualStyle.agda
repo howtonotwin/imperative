@@ -2,15 +2,13 @@
 import Imperative
 module Imperative.ManualStyle (I : Imperative.Impl) where
 
-open import Relation.Binary.PropositionalEquality
-
 import Imperative.Framing
 import Imperative.Restructuring
 
 private module I = Imperative.Impl I
 open I hiding (frame) public
-open Imperative.Framing StateThread Ref public
-open Imperative.Restructuring StateThread Ref hiding (Restructuring) public
+open Imperative.Framing StateThread Array public
+open Imperative.Restructuring StateThread Array hiding (Restructuring) public
 
 frame :
   ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 pre focus side : Condition s} {@0 post : A → Condition s} →

@@ -7,8 +7,10 @@ open import Data.Unit
 
 open import ArrayValue
 import Erased as SafeErased
-import Imperative
 import Realizer as SafeRealizer
+
+import Imperative
+import Imperative.Specifications
 
 {-# FOREIGN GHC import qualified Control.Monad.ST #-}
 {-# FOREIGN GHC import qualified GHC.Arr #-}
@@ -64,13 +66,10 @@ private
   module STImpl where
     abstract
       record StateThread : Setω₀ where constructor mkStateThread
-      record Ref (s : StateThread) : Set lzero where
-        constructor mkRef
-        field
-          arr : Unsafe.STArray
-          ix  : ℕ
+      Array : StateThread → @0 ℕ → Set lzero
+      Array _ _ = Unsafe.STArray
 
-      open Imperative.Spec StateThread Ref
+      open Imperative.Specifications StateThread Array
 
       Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
       Program _ A _ _ = Unsafe.ST A
@@ -94,17 +93,16 @@ private
       read :
         ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 x : A}
         (r : Ref s) → Program s (Realizer x) (r ↦ x ⨾ 𝟏) (λ _ → r ↦ x ⨾ 𝟏)
-      read (mkRef a i) = Unsafe.thenST (Unsafe.readSTArray a i) λ x → Unsafe.returnST (Unsafe.realize x)
+      read (slice a i _) = Unsafe.thenST (Unsafe.readSTArray a i) λ x → Unsafe.returnST (Unsafe.realize x)
 
       write :
         ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A}
         (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
-      write (mkRef a i) y = Unsafe.writeSTArray a i y
+      write (slice a i _) y = Unsafe.writeSTArray a i y
 
       allocArray :
-        {s : StateThread} (n : ℕ) →
-        Program s ((i : ℕ) → .(i < n) → Ref s) 𝟏 (λ r → r ↦＊ ArrayValue.replicate n tt)
-      allocArray n = Unsafe.thenST (Unsafe.newSTArray n) λ a → Unsafe.returnST λ i i<n → mkRef a i
+        {s : StateThread} (n : ℕ) → Program s (Array s n) 𝟏 (λ a → fullSlice a ↦＊ ArrayValue.replicate n tt)
+      allocArray n = Unsafe.newSTArray n
 
       frame :
         ∀ {s : StateThread} {ℓ} {A : Set ℓ}
