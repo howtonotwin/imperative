@@ -5,16 +5,18 @@ module Imperative.AutomaticStyle (I : Imperative.Impl) where
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
-open import Imperative.Solvers
+import Imperative.Condition
 import Imperative.Framing
 import Imperative.ManualStyle
 import Imperative.Restructuring
+open import Imperative.Solvers
 
 private module I = Imperative.Impl I
 open I hiding (_>>=_; _>>_; return) public
+open Imperative.Condition StateThread Array public
 open Imperative.Framing StateThread Array
 open Imperative.ManualStyle I using () renaming (frame to reframe)
-open Imperative.Restructuring StateThread Array hiding (Restructuring) public
+open Imperative.Restructuring StateThread Array public
 
 _>>=_ :
   ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}

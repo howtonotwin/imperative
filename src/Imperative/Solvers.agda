@@ -10,7 +10,7 @@ open import Data.Product
 open import Data.Unit
 open import Reflection renaming (normalise to normalize)
 
-import Imperative.Specifications
+import Imperative.Condition
 import Imperative.Framing
 import Imperative.Restructuring
 
@@ -109,26 +109,26 @@ private
       pure (parts , blockerAll′ (mapMaybe blockerTerm′ keys))
       where
         peel : Term → TC (List ConditionPart)
-        peel (con (quote Imperative.Specifications.𝟏) (_ ∷ _ ∷ _ ∷ [])) = pure []
-        peel (con (quote Imperative.Specifications._⨾_) (_ ∷ _ ∷ _ ∷ arg _ assignmentTerm ∷ arg _ rest ∷ [])) = do
+        peel (con (quote Imperative.Condition.𝟏) (_ ∷ _ ∷ _ ∷ [])) = pure []
+        peel (con (quote Imperative.Condition._⨾_) (_ ∷ _ ∷ _ ∷ arg _ assignmentTerm ∷ arg _ rest ∷ [])) = do
           restParts ← peel rest
-          key ← normalize (def (quote Imperative.Specifications.Assignment.var) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ []))
-          let body = con (quote Imperative.Specifications._⨾_) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ vArg (con (quote Imperative.Specifications.𝟏) []) ∷ [])
+          key ← normalize (def (quote Imperative.Condition.Assignment.var) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ []))
+          let body = con (quote Imperative.Condition._⨾_) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ vArg assignmentTerm ∷ vArg (con (quote Imperative.Condition.𝟏) []) ∷ [])
           pure (record { key = key; body = body } ∷ restParts)
         peel t = pure (record { key = t; body = t } ∷ [])
 
     composeCondition : List ConditionPart → Term
     composeCondition []                    =
-      con (quote Imperative.Specifications.𝟏) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ [])
+      con (quote Imperative.Condition.𝟏) (hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷ [])
     composeCondition (p ∷ ps) =
-      def (quote Imperative.Specifications._&_) (
+      def (quote Imperative.Condition._&_) (
         vArg stateThreadTy ∷ vArg arrCon ∷ hArg stateThread ∷
         vArg (p .body) ∷ vArg (composeCondition ps) ∷ [])
 
     restructure-loop : List ConditionPart → List ConditionPart → Term → TC ⊤
     restructure-loop inputParts []       hole =
       unify hole
-        (con (quote Imperative.Specifications.[_]╳) (
+        (con (quote Imperative.Restructuring.[_]╳) (
           hArg stateThreadTy ∷ hArg arrCon ∷ hArg stateThread ∷
           vArg (composeCondition inputParts) ∷ []))
     restructure-loop inputParts (p ∷ ps) hole = do
@@ -149,19 +149,19 @@ restructuring-tactic hole = do
   input ← checkType unknown unknown
   output ← checkType unknown unknown
   checkType hole
-    (def (quote Imperative.Specifications.Restructuring) (
+    (def (quote Imperative.Restructuring.Restructuring) (
       vArg stateThreadTy ∷ vArg arrCon ∷ hArg stateThread ∷
       vArg input ∷ vArg output ∷ []))
   let module Ctx = InProgramContext stateThreadTy arrCon stateThread
 
   inputParts , blocker1 ← Ctx.decomposeCondition input
-  debugPrint "imperative.restructure!" 20 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
+  debugPrint "imperative.restructuring-tactic" 20 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
   outputParts , blocker2 ← Ctx.decomposeCondition output
-  debugPrint "imperative.restructure!" 20 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
+  debugPrint "imperative.restructuring-tactic" 20 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
   blockTC′ (blockerAll′ (catMaybes (blocker1 ∷ blocker2 ∷ [])))
 
-  debugPrint "imperative.restructure!" 10 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
-  debugPrint "imperative.restructure!" 10 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
+  debugPrint "imperative.restructuring-tactic" 10 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
+  debugPrint "imperative.restructuring-tactic" 10 (strErr "output: " ∷ listErr (List.map conditionPartErr inputParts))
   Ctx.restructure-loop inputParts outputParts hole
 macro
   restructuring! : Term → TC ⊤

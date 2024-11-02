@@ -10,7 +10,8 @@ import Erased as SafeErased
 import Realizer as SafeRealizer
 
 import Imperative
-import Imperative.Specifications
+import Imperative.Condition
+import Imperative.Restructuring
 
 {-# FOREIGN GHC import qualified Control.Monad.ST #-}
 {-# FOREIGN GHC import qualified GHC.Arr #-}
@@ -68,15 +69,15 @@ private
       record StateThread : Setω₀ where constructor mkStateThread
       Array : StateThread → @0 ℕ → Set lzero
       Array _ _ = Unsafe.STArray
-
-      open Imperative.Specifications StateThread Array
+      open Imperative.Condition StateThread Array
+      open Imperative.Restructuring StateThread Array
 
       Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
       Program _ A _ _ = Unsafe.ST A
 
       runProgram :
-        ∀ {ℓ} {A : Set ℓ} {@0 post : (s : StateThread) → A → Condition s} →
-        ({s : StateThread} → Program s A 𝟏 (post s)) → A
+        ∀ {ℓ} {A : Set ℓ} →
+        ({s : StateThread} → Program s A 𝟏 (λ _ → 𝟏)) → A
       runProgram x = Unsafe.runST (x {mkStateThread})
 
       return :
@@ -96,7 +97,7 @@ private
       read (slice a i _) = Unsafe.thenST (Unsafe.readSTArray a i) λ x → Unsafe.returnST (Unsafe.realize x)
 
       write :
-        ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A}
+        ∀ {s : StateThread} {@0 ℓA} {ℓB} {@0 A : Set ℓA} {B : Set ℓB} {@0 x : A}
         (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
       write (slice a i _) y = Unsafe.writeSTArray a i y
 

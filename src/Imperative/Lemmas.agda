@@ -14,20 +14,6 @@ open import Data.Sum
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality hiding ([_])
 
-import Imperative.Specifications
-open import LargeEq
-
-module Specifications (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) where
-  open Imperative.Specifications StateThread Array
-
-  liveRefs& : {s : StateThread} (xs : Condition s) (ys : Condition s) → liveRefs (xs & ys) ≡ liveRefs xs ++ liveRefs ys
-  liveRefs& 𝟏         ys = refl
-  liveRefs& (x ⨾⨾ xs) ys = cong (x ∷_) (liveRefs& xs ys)
-
-  assoc& : {s : StateThread} (l m r : Condition s) → (l & m) & r ≡ω₀ l & m & r
-  assoc& 𝟏        m r = reflω₀
-  assoc& (v ⨾⨾ l) m r = congω₀ (v ⨾⨾_) (assoc& l m r)
-
 module ∈ {ℓ} {A : Set ℓ} where
   ++⁺ : {xs ys : List A} {x : A} → x ∈ xs ⊎ x ∈ ys → x ∈ xs ++ ys
   ++⁺ = [ ∈-++⁺ˡ , ∈-++⁺ʳ _ ]

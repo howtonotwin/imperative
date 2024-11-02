@@ -26,7 +26,8 @@ open import Erased
 open import Realizer
 
 import Imperative
-import Imperative.Specifications
+import Imperative.Condition
+import Imperative.Restructuring
 import Imperative.Lemmas as Lemmas
 
 private
@@ -34,8 +35,8 @@ private
     record StateThread : Setω₀ where
     Array : StateThread → @0 ℕ → Set lzero
     Array _ _ = ℕ
-    open Imperative.Specifications StateThread Array
-    open Lemmas.Specifications StateThread Array
+    open Imperative.Condition StateThread Array
+    open Imperative.Restructuring StateThread Array
 
     private
       lea : {s : StateThread} → Ref s → ℕ
@@ -51,8 +52,8 @@ private
       Σ[ x ∈ A ] Unique (liveAddrs (post x)) × All (λ r → r ∈ liveAddrs pre ⊎ brk ≤ r) (liveAddrs (post x))
 
     runProgram :
-      ∀ {ℓ} {A : Set ℓ} {@0 post : (s : StateThread) → A → Condition s} →
-      ({s : StateThread} → Program s A 𝟏 (post s)) → A
+      ∀ {ℓ} {A : Set ℓ} →
+      ({s : StateThread} → Program s A 𝟏 (λ _ → 𝟏)) → A
     runProgram x = x 0 [] [] .proj₁
 
     return :
@@ -76,7 +77,7 @@ private
     read {x = x} r brk sep alloced = realized x , sep , inj₁ (here refl) ∷ []
 
     write :
-      ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB} {@0 x : A}
+      ∀ {s : StateThread} {@0 ℓA} {ℓB} {@0 A : Set ℓA} {B : Set ℓB} {@0 x : A}
       (r : Ref s) (y : B) → Program s ⊤ (r ↦ x ⨾ 𝟏) (λ _ → r ↦ y ⨾ 𝟏)
     write r y brk sep alloced = tt , sep , inj₁ (here refl) ∷ []
 

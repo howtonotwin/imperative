@@ -1,9 +1,9 @@
 {-# OPTIONS --safe #-}
 open import Agda.Primitive
 open import Data.Nat
-module Imperative.Specifications (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) where
+module Imperative.Condition (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) where
 
-open import Data.List
+open import Data.List as List
 open import Data.List.Relation.Unary.Unique.Propositional
 open import Data.Nat.Properties
 open import Data.Unit
@@ -11,6 +11,7 @@ open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _�
 
 open import ArrayValue
 open import Erased
+open import LargeEq
 open import Realizer
 
 record Slice (s : StateThread) (@0 n : ℕ) : Set lzero where
@@ -25,7 +26,7 @@ Ref s = Slice s 1
 fullSlice : {s : StateThread} {@0 n : ℕ} → Array s n → Slice s n
 fullSlice a = slice a 0 ≤-refl
 infixl 10 _[_because_] _[_∶+_because_]
-_[_∶+_because_] : {s : StateThread} {@0 n : ℕ} → Slice s n → (i l : ℕ) → @0 .(l + i ≤ n) → Slice s l
+_[_∶+_because_] : {s : StateThread} {@0 n : ℕ} → Slice s n → (i : ℕ) (@0 l : ℕ) → @0 .(l + i ≤ n) → Slice s l
 slice a o fit [ i ∶+ l because p ] =
   let @0 n : _; n = _ in
   slice a (i + o)
@@ -36,6 +37,20 @@ slice a o fit [ i ∶+ l because p ] =
       fit)
 _[_because_] : {s : StateThread} {@0 n : ℕ} → Slice s n → (i : ℕ) → @0 .(i < n) → Ref s
 _[_because_] = _[_∶+ 1 because_]
+
+infixr 9 *_
+*_ : {s : StateThread} {@0 n : ℕ} → Slice s (suc n) → Ref s
+*_ = _[ 0 because z<s ]
+infixr 9 ++_
+++_ : {s : StateThread} {@0 n : ℕ} → Slice s (suc n) → Slice s n
+++_ {n = n} = _[ 1 ∶+ _ because subst (_≤ suc n) (+-comm 1 n) ≤-refl ]
+
+eqSlice :
+  {s : StateThread} {n : ℕ} {x y : Slice s n} (open Slice)
+  (e₁ : underlyingLength x ≡ underlyingLength y) (e₂ : subst (λ n → Array s n) e₁ (underlying x) ≡ underlying y)
+  (e₃ : offset x ≡ offset y) →
+  x ≡ y
+eqSlice refl refl refl = refl
 substSlice : {s : StateThread} {@0 n m : ℕ} → @0 .(n ≡ m) → Slice s n → Slice s m
 substSlice e (slice a o p) = slice a o (subst _ e p)
 
@@ -67,18 +82,14 @@ _&_ : {s : StateThread} → Condition s → Condition s → Condition s
 infix 1 _↦＊_
 _↦＊_ : {s : StateThread} {@0 n : ℕ} → Slice s n → ArrayValue n → Condition s
 s ↦＊ []     = 𝟏
-s ↦＊ x ∷ xs =
-  let @0 n : _; n = _ in
-  s [ 0 because z<s ] ↦ x ⨾ s [ 1 ∶+ _ because subst (_≤ suc n) (+-comm 1 _) ≤-refl ] ↦＊ xs
+s ↦＊ x ∷ xs = * s ↦ x ⨾ ++ s ↦＊ xs
 
-infixr -1 [_]&[_]⨾[_]⨾⨾_
-data Restructuring {s : StateThread} : Condition s → Condition s → Setω₀ where
-  [_]╳ : (discards : Condition s) → Restructuring discards 𝟏
-  [_]&[_]⨾[_]⨾⨾_ :
-    ∀ (l : Condition s)
-    (v : Ref s) {ℓ} {A : Set ℓ} {x : A}
-    (r : Condition s) {rest : Condition s} →
-    Restructuring (l & r) rest →
-    Restructuring (l & v ↦ x ⨾ r) (v ↦ x ⨾ rest)
-pattern ╳ = [ _ ]╳
-pattern ∎ = [ 𝟏 ]╳
+liveRefs& :
+  {s : StateThread} (xs : Condition s) (ys : Condition s) →
+  liveRefs (xs & ys) ≡ liveRefs xs List.++ liveRefs ys
+liveRefs& 𝟏         ys = refl
+liveRefs& (x ⨾⨾ xs) ys = cong (x ∷_) (liveRefs& xs ys)
+
+assoc& : {s : StateThread} (l m r : Condition s) → (l & m) & r ≡ω₀ l & m & r
+assoc& 𝟏        m r = reflω₀
+assoc& (v ⨾⨾ l) m r = congω₀ (v ⨾⨾_) (assoc& l m r)
