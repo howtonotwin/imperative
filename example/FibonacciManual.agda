@@ -10,9 +10,10 @@ open import Data.Unit
 open import Function.Strict renaming (_$!_ to infixl -10 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
+open import Realizer
+
 import Imperative
 import Imperative.ManualStyle
-open import Realizer
 
 @0 fib : ℕ → ℕ
 fib 0             = 0

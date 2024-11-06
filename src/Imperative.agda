@@ -22,9 +22,12 @@ record Impl : Setω₁ where
   field
     StateThread : Setω₀
     Array : StateThread → @0 ℕ → Set lzero
-  open Imperative.Condition StateThread Array
-  open Imperative.Restructuring StateThread Array
-  open Imperative.Framing StateThread Array
+  module Condition = Imperative.Condition StateThread Array
+  module Restructuring = Imperative.Restructuring StateThread Array
+  module Framing = Imperative.Framing StateThread Array
+  open Condition
+  open Restructuring
+  open Framing
   field
     Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
     runProgram :

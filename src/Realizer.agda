@@ -23,5 +23,5 @@ _<*>_ :
   Realizer f → Realizer x → Realizer (f x)
 realized f <*> realized x = realized (f x)
 
-rethink : ∀ {ℓ} {A : Set ℓ} {@0 x y : A} → Realizer x → @0 x ≡ y → Realizer y
-rethink (realized x) refl = realized x
+substRealizer : ∀ {ℓ} {A : Set ℓ} {@0 x y : A} → @0 x ≡ y → Realizer x → Realizer y
+substRealizer refl (realized x) = realized x

@@ -7,9 +7,10 @@ open import Data.Unit
 open import Function.Strict renaming (_$!_ to infixl -10 _!!_)
 open import Relation.Binary.PropositionalEquality renaming (trans to infixl 1 _∙_)
 
+open import Realizer
+
 import Imperative
 import Imperative.AutomaticStyle
-open import Realizer
 
 -- a functional specification, inefficient and therefore erased
 @0 fib : ℕ → ℕ

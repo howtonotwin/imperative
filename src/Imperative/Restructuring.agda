@@ -46,3 +46,7 @@ module _ {s : StateThread} where
     Restructuring (l & m & r) (m & rest)
   [ l ]&[ 𝟏      ]&[ r ]⨾⨾ p = p
   [ l ]&[ v ⨾⨾ m ]&[ r ]⨾⨾ p = [ l ]&[ v ]⨾[ m & r ]⨾⨾ [ l ]&[ m ]&[ r ]⨾⨾ p
+
+  discards : {pre post : Condition s} → Restructuring pre post → Condition s
+  discards [ discards ]╳           = discards
+  discards ([ l ]&[ v ]⨾[ r ]⨾⨾ p) = discards p

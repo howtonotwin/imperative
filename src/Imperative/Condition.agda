@@ -91,9 +91,9 @@ module _ {s : StateThread} where
   s ↦＊ []     = 𝟏
   s ↦＊ x ∷ xs = * s ↦ x ⨾ ++ s ↦＊ xs
 
-  liveRefs& : (xs : Condition s) (ys : Condition s) → liveRefs (xs & ys) ≡ liveRefs xs List.++ liveRefs ys
-  liveRefs& 𝟏         ys = refl
-  liveRefs& (x ⨾⨾ xs) ys = cong (x ∷_) (liveRefs& xs ys)
+  liveRefs-& : (xs : Condition s) (ys : Condition s) → liveRefs (xs & ys) ≡ liveRefs xs List.++ liveRefs ys
+  liveRefs-& 𝟏         ys = refl
+  liveRefs-& (x ⨾⨾ xs) ys = cong (x ∷_) (liveRefs-& xs ys)
 
   assoc& : (l m r : Condition s) → (l & m) & r ≡ω₀ l & m & r
   assoc& 𝟏        m r = reflω₀

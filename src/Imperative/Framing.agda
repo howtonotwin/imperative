@@ -8,9 +8,6 @@ open import Imperative.Restructuring StateThread Array
 open import LargeEq
 
 module _ {s : StateThread} where
-  discards : {pre post : Condition s} → Restructuring pre post → Condition s
-  discards [ discards ]╳           = discards
-  discards ([ l ]&[ v ]⨾[ r ]⨾⨾ p) = discards p
   data Framing (outer inner : Condition s) : Condition s → Setω₀ where
     focus : (p : Restructuring outer inner) → Framing outer inner (discards p)
   unfocus : {o i d : Condition s} → Framing o i d → Restructuring o i

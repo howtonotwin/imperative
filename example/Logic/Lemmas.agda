@@ -13,12 +13,6 @@ open import Data.Product
 open import Data.Vec as DVec hiding (module Vec)
 open import Relation.Binary.PropositionalEquality
 
-open import ArrayValue
-open import LargeEq
-
-import Imperative
-import Imperative.Condition
-
 open Data.List.Relation.Unary.Sorted.TotalOrder ≤-totalOrder
 
 module Sorted where
@@ -41,6 +35,3 @@ module List where
   last-∷ʳ []           y = refl
   last-∷ʳ (_ ∷ [])     y = refl
   last-∷ʳ (_ ∷ x ∷ xs) y = last-∷ʳ (x ∷ xs) y
-
-module Condition (I : Imperative.Impl) (open Imperative.Impl I using (StateThread; Array)) {s : StateThread} where
-  open Imperative.Condition StateThread Array

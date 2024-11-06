@@ -44,7 +44,7 @@ private
       liveAddrs : {s : StateThread} → Condition s → List ℕ
       liveAddrs c = List.map lea (liveRefs c)
       liveAddrs& : {s : StateThread} (c d : Condition s) → liveAddrs (c & d) ≡ liveAddrs c List.++ liveAddrs d
-      liveAddrs& c d = cong (List.map lea) (liveRefs& c d) ∙ List.map-++ lea _ _
+      liveAddrs& c d = cong (List.map lea) (liveRefs-& c d) ∙ List.map-++ lea _ _
 
     Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
     Program _ A pre post =

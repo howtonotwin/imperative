@@ -2,15 +2,11 @@
 import Imperative
 module Imperative.ManualStyle (I : Imperative.Impl) where
 
-import Imperative.Condition
-import Imperative.Framing
-import Imperative.Restructuring
-
 private module I = Imperative.Impl I
-open I hiding (frame) public
-open Imperative.Condition StateThread Array public
-open Imperative.Framing StateThread Array public
-open Imperative.Restructuring StateThread Array public
+open I hiding (frame; module Condition; module Framing; module Restructuring) public
+open I.Condition public
+open I.Framing public
+open I.Restructuring public
 
 frame :
   ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 pre focus side : Condition s} {@0 post : A → Condition s} →
