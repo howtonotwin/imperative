@@ -53,11 +53,13 @@ module _ (I : Imperative.Impl) where
     -- here only the derived move [_]↦[_]∎ is used: "apply equality to variable"
     restructure [ lo ]↦[ eqLo ]∎
     restructure [ hi ]↦[ eqHi ]∎
-    -- an explicit return can be necessary to rearrange the state
+    -- SmartDo uses reflection to automatically insert uses of the frame rule on
+    -- each use of _>>=_ or _>>_ (this makes the above two lines work)
+    -- this hides a _lot_ of boilerplate: compare to FibonacciManual
+    -- an explicit return (as opposed to making a tail call) can also be
+    -- necessary at the end of a do to rearrange the state
     return tt
   fibWork n lo hi (suc m) eqLo eqHi = do
-    -- SmartDo uses reflection to automatically insert uses of the frame rule
-    -- this hides a _lot_ of boilerplate: see FibonacciManual
     oldLo ← read lo
     oldHi ← read hi
     writeRealized hi !! ⦇ oldLo + oldHi ⦈ -- be strict or suffer a space leak!
