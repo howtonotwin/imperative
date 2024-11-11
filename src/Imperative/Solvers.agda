@@ -1,7 +1,7 @@
 {-# OPTIONS --safe #-}
 module Imperative.Solvers where
 
-open import Agda.Builtin.Reflection using (Telescope; withReconstructed)
+open import Agda.Builtin.Reflection using (Telescope)
 open import Agda.Primitive
 open import Data.Bool
 open import Data.List as List
@@ -16,34 +16,37 @@ import Imperative.Framing
 import Imperative.Restructuring
 
 private
-  allMetas : Term → List Meta
-  allMetasArgs : List (Arg Term) → List Meta
-  allMetasClauses : List Clause → List Meta
-  allMetasTelescope : Telescope → List Meta
-  allMetasArgs []             = []
-  allMetasArgs (arg (arg-info _ (modality irrelevant _)) t ∷ as) = allMetasArgs as
-  allMetasArgs (arg _ t ∷ as) = allMetas t ++ allMetasArgs as
-  allMetasClauses []                                   = []
-  allMetasClauses (Clause.clause        tel ps t ∷ cs) = allMetasTelescope tel ++ allMetas t ++ allMetasClauses cs
-  allMetasClauses (Clause.absurd-clause tel ps   ∷ cs) = allMetasTelescope tel ++ allMetasClauses cs
-  allMetasTelescope []                    = []
-  allMetasTelescope ((_ , arg _ t) ∷ tel) = allMetas t ++ allMetasTelescope tel
-  allMetas (var _ args)              = allMetasArgs args
-  allMetas (con _ args)              = allMetasArgs args
-  allMetas (def _ args)              = allMetasArgs args
-  allMetas (lam v (abs _ t))         = allMetas t
-  allMetas (pat-lam cs args)         = allMetasClauses cs ++ allMetasArgs args
-  allMetas (pi (arg _ a) (abs _ b))  = allMetas a ++ allMetas b
-  allMetas (agda-sort (Sort.set t))  = allMetas t
-  allMetas (agda-sort (Sort.prop t)) = allMetas t
-  allMetas (lit (meta m))            = m ∷ []
-  allMetas (meta m args)             = m ∷ allMetasArgs args
-  allMetas _                         = []
+  module AllMetas where
+    open Clause
+    open Sort
+    term      : Term            → List Meta
+    args      : List (Arg Term) → List Meta
+    clauses   : List Clause     → List Meta
+    telescope : Telescope       → List Meta
+
+    term      (var _ as)                    = args as
+    term      (con _ as)                    = args as
+    term      (def _ as)                    = args as
+    term      (lam v (abs _ t))             = term t
+    term      (pat-lam cs as)               = clauses cs ++ args as
+    term      (pi (arg _ a) (abs _ b))      = term a ++ term b
+    term      (agda-sort (set t))           = term t
+    term      (agda-sort (prop t))          = term t
+    term      (lit (meta m))                = m ∷ []
+    term      (meta m as)                   = m ∷ args as
+    term      _                             = []
+    args      []                            = []
+    args      (arg _ t ∷ as)                = term t ++ args as
+    clauses   []                            = []
+    clauses   (clause        tel ps t ∷ cs) = telescope tel ++ term t ++ clauses cs
+    clauses   (absurd-clause tel ps   ∷ cs) = telescope tel ++ clauses cs
+    telescope []                            = []
+    telescope ((_ , arg _ t) ∷ tel)         = term t ++ telescope tel
 
   Blocker′ : Set lzero
   Blocker′ = Maybe Blocker
   blockerTerm′ : Term → Blocker′
-  blockerTerm′ t with allMetas t
+  blockerTerm′ t with AllMetas.term t
   ... | []         = nothing
   ... | ms@(_ ∷ _) = just (blockerAny (List.map blockerMeta ms))
   blockerAll′ : List Blocker → Blocker′
@@ -52,16 +55,6 @@ private
   blockTC′ : Blocker′ → TC ⊤
   blockTC′ nothing  = pure tt
   blockTC′ (just b) = blockTC b
-  allMetasBlocker : Blocker → List Meta
-  allMetasBlockers : List Blocker → List Meta
-  allMetasBlocker (blockerAny bs) = allMetasBlockers bs
-  allMetasBlocker (blockerAll bs) = allMetasBlockers bs
-  allMetasBlocker (blockerMeta m) = m ∷ []
-  allMetasBlockers []       = []
-  allMetasBlockers (b ∷ bs) = allMetasBlocker b ++ allMetasBlockers bs
-  allMetasBlocker′ : Blocker′ → List Meta
-  allMetasBlocker′ nothing  = []
-  allMetasBlocker′ (just b) = allMetasBlocker b
 
   record AtomicCondition : Set lzero where
     field
@@ -103,13 +96,6 @@ private
   conditionCodeErr : ConditionCode → List ErrorPart
   conditionCodeErr `[ atom ] = atomicConditionErr atom
   conditionCodeErr (l `& r)  = strErr "(" ∷ conditionCodeErr l ++ strErr ") & (" ∷ conditionCodeErr r ++ strErr ")" ∷ []
-  listErr : List (List ErrorPart) → List ErrorPart
-  listErr []       = strErr "[]" ∷ []
-  listErr (x ∷ xs) = strErr "[" ∷ x ++ loop xs
-    where
-      loop : List (List ErrorPart) → List ErrorPart
-      loop []       = strErr "]" ∷ []
-      loop (x ∷ xs) = strErr ", " ∷ x ++ loop xs
 
   pattern app𝟏 = con (quote Imperative.Condition.𝟏) (_ ∷ [])
   infixr 0 _app⨾_
