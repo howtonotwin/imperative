@@ -24,13 +24,13 @@ open import LargeEq
 open import Realizer
 
 import Imperative
-import Imperative.ManualStyle
+import Imperative.AutomaticStyle
 
 import Logic.Lemmas as Lemmas
 open import Logic.Permutation
 
 module _ (I : Imperative.Impl) where
-  open Imperative.ManualStyle I
+  open Imperative.AutomaticStyle I
 
   insert :
     {s : StateThread} (n : ℕ) (arr : Slice s (suc n)) (@0 pre : Vec ℕ n) (x : ℕ) {@0 z : ℕ} →
@@ -39,24 +39,18 @@ module _ (I : Imperative.Impl) where
       (Erased (Σ[ post ∈ Vec ℕ (suc n) ] Insertion x pre post × Sorted (Vec.toList post)))
       (arr ↦＊ vec (pre Vec.∷ʳ z))
       λ (erased (post , _)) → arr ↦＊ vec post
-  insert zero    arr []              x p = do
+  insert zero    arr@slice []              x p = do
     write (* arr) x
     return (erased (x ∷ [] , here , [-]))
-  insert (suc n) arr pre             x p with erased (Vec.initLast pre)
-  insert (suc n) arr .(pre Vec.∷ʳ y) x p | erased (pre , y , refl) = do
+  insert (suc n) arr@slice pre             x p with erased (Vec.initLast pre)
+  insert (suc n) arr@slice .(pre Vec.∷ʳ y) x p | erased (pre , y , refl) = do
     restructure [! congω₀ (arr ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ arr _ _ !]∎
-    realized .y ← frame (>[ arr [∶-1] ↦＊ _ ]< <& (arr [-1] ⨾⨾ 𝟏)) do
-      restructure [! congω₀ (arr [∶-1] ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ (arr [∶-1]) _ _ !]∎
-      y′ ← frame ((arr [∶-1] [∶-1] ↦＊ _) &> >[ arr [∶-1] [-1] ⨾⨾ 𝟏 ]<) (read (arr [∶-1] [-1]))
-      restructure (unfocus (
-            ((arr [∶-1] [-1] ⨾⨾ 𝟏) &> (>[ arr [∶-1] [∶-1] ↦＊ _ ]< <& 𝟏))
-        <&> >[ arr [∶-1] [-1] ⨾⨾ 𝟏 ]<))
-      restructure [! symω₀ (congω₀ (arr [∶-1] ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ (arr [∶-1]) _ _) !]∎
-      return y′
+    restructure [! congω₀ (arr [∶-1] ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ (arr [∶-1]) _ _ !]∎
+    realized .y ← read (arr [∶-1] [-1])
+    restructure [! symω₀ (congω₀ (arr [∶-1] ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ (arr [∶-1]) _ _) !]∎
     case y ≤? x of λ where
       (yes y≤x) → do
-        frame ((arr [∶-1] ↦＊ _) &> >[ arr [-1] ⨾⨾ 𝟏 ]<) (write (arr [-1]) x)
-        restructure (unfocus (((arr [-1] ⨾⨾ 𝟏) &> (>[ arr [∶-1] ↦＊ _ ]< <& 𝟏)) <&> >[ arr [-1] ⨾⨾ 𝟏 ]<))
+        write (arr [-1]) x
         restructure [! symω₀ (congω₀ (arr ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ arr _ _) !]∎
         return (erased (
           pre Vec.∷ʳ y Vec.∷ʳ x ,
@@ -70,10 +64,9 @@ module _ (I : Imperative.Impl) where
                 (just y≤x))
               [-])))
       (no  y≰x) → do
-        frame ((arr [∶-1] ↦＊ _) &> >[ arr [-1] ⨾⨾ 𝟏 ]<) (write (arr [-1]) y)
+        write (arr [-1]) y
         erased (post , i , sorted) ←
-          frame ((arr [-1] ⨾⨾ 𝟏) &> (>[ arr [∶-1] ↦＊ _ ]< <& 𝟏))
-            (insert n (arr [∶-1]) pre x (Lemmas.Sorted.++⁻ (subst Sorted (Lemmas.Vec.toList-∷ʳ pre y) p) .proj₁))
+          insert n (arr [∶-1]) pre x (Lemmas.Sorted.++⁻ (subst Sorted (Lemmas.Vec.toList-∷ʳ pre y) p) .proj₁)
         restructure [! symω₀ (congω₀ (arr ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ arr _ _) !]∎
         return (erased (
           post Vec.∷ʳ y ,
@@ -97,29 +90,22 @@ module _ (I : Imperative.Impl) where
       (Erased (Σ[ out ∈ Vec ℕ n ] Permutation (sorted Vec.++ unsorted) out × Sorted (Vec.toList out)))
       (arr ↦＊ vec (sorted Vec.++ unsorted))
       λ (erased (out , _)) → arr ↦＊ vec out
-  insertionSort i zero    arr sorted []       p =
+  insertionSort i zero    arr       sorted []       p        =
     return (erased (
       sorted Vec.++ [] ,
       Permutation-refl ,
       subst Sorted
         (sym (Vec.toList-++ sorted [] ∙ List.++-identityʳ (Vec.toList sorted)))
         p))
-  insertionSort i (suc m) arr sorted (x ∷ xs) isSorted = do
+  insertionSort i (suc m) arr@slice sorted (x ∷ xs) isSorted = do
     let module Halves = ↦＊-++ i (suc m) arr
     let eqn = +-suc i m
     let arr′ = substSlice eqn arr
     let module Halves′ = ↦＊-++ (suc i) m arr′
     restructure [! congω₀ (arr ↦＊_) (vec-++ sorted (x ∷ xs)) ∙ω₀ Halves.eqn (vec sorted) (vec (x ∷ xs)) !]∎
-    realized .x ←
-      frame
-        ((Halves.left ↦＊ _) &> (>[ * Halves.right ⨾⨾ 𝟏 ]< <& (++ Halves.right ↦＊ _)))
-        (read (* Halves.right))
-    erased (sorted₁ , x∈sorted₁ , isSorted₁) ← frame
-      (    ((* Halves.right ⨾⨾ 𝟏) &> (>[ Halves.left ↦＊ _ ]< <& (++ Halves.right ↦＊ _)))
-       <&> (>[ * Halves.right ⨾⨾ 𝟏 ]< <& (++ Halves.right ↦＊ _)))
-      do
-        restructure [! symω₀ (congω₀ (Halves′.left ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ Halves′.left _ _) !]∎
-        insert i Halves′.left sorted x isSorted
+    realized .x ← read (* Halves.right)
+    restructure [! symω₀ (congω₀ (Halves′.left ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ Halves′.left _ _) !]∎
+    erased (sorted₁ , x∈sorted₁ , isSorted₁) ← insert i Halves′.left sorted x isSorted
     restructure [! symω₀ (congω₀ (arr′ ↦＊_) (vec-++ _ xs) ∙ω₀ Halves′.eqn (vec _) (vec xs)) !]∎
     erased (sorted₂ , sorting , isSorted₂) ← insertionSort (suc i) m arr′ sorted₁ xs isSorted₁
     restructure [! substSlice-↦＊-cast eqn arr _ ∙ω₀ congω₀ (arr ↦＊_) (symω₀ (vec-cast (sym eqn) _)) !]∎
@@ -139,5 +125,4 @@ module _ (I : Imperative.Impl) where
     writeSlice (fullSlice arr) (vec xs)
     erased (xs′ , prf) ← insertionSort 0 _ (fullSlice arr) [] _ []
     realized .xs′ ← readVec (fullSlice arr)
-    restructure [ fullSlice arr ↦＊ _ ]╳
     return (xs′ , erased prf)
