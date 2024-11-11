@@ -10,8 +10,9 @@ import Erased as SafeErased
 import Realizer as SafeRealizer
 
 import Imperative
-import Imperative.Condition
-import Imperative.Restructuring
+open import Imperative.Slice hiding (Slice; Ref)
+open import Imperative.Condition hiding (Condition)
+open import Imperative.Restructuring
 
 {-# FOREIGN GHC import qualified Control.Monad.ST #-}
 {-# FOREIGN GHC import qualified GHC.Arr #-}
@@ -69,8 +70,7 @@ private
       record StateThread : Setω₀ where constructor mkStateThread
       Array : StateThread → @0 ℕ → Set lzero
       Array _ _ = Unsafe.STArray
-      open Imperative.Condition StateThread Array
-      open Imperative.Restructuring StateThread Array
+      open Imperative.Specifications StateThread Array
 
       Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
       Program _ A _ _ = Unsafe.ST A

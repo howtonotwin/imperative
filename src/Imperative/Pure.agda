@@ -26,8 +26,9 @@ open import Erased
 open import Realizer
 
 import Imperative
-import Imperative.Condition
-import Imperative.Restructuring
+open import Imperative.Slice hiding (Slice; Ref)
+open import Imperative.Condition hiding (Condition)
+open import Imperative.Restructuring
 import Imperative.Lemmas as Lemmas
 
 private
@@ -35,8 +36,7 @@ private
     record StateThread : Setω₀ where
     Array : StateThread → @0 ℕ → Set lzero
     Array _ _ = ℕ
-    open Imperative.Condition StateThread Array
-    open Imperative.Restructuring StateThread Array
+    open Imperative.Specifications StateThread Array
 
     private
       lea : {s : StateThread} → Ref s → ℕ

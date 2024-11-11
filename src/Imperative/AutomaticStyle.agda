@@ -5,16 +5,19 @@ module Imperative.AutomaticStyle (I : Imperative.Impl) where
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
-import Imperative.ManualStyle
+import Imperative.Slice
+import Imperative.Condition
+open import Imperative.Framing
+open import Imperative.ManualStyle I using () renaming (frame to reframe)
+import Imperative.Restructuring
 open import Imperative.Solvers
 
 private module I = Imperative.Impl I
-open I hiding (_>>=_; _>>_; return; module Condition; module Framing; module Restructuring) public
-open I.Condition public
-open I.Restructuring public
-
-open I.Framing
-open Imperative.ManualStyle I using () renaming (frame to reframe)
+open I hiding (_>>=_; _>>_; return) public
+open Imperative.Slice renaming (Slice to GenSlice; Ref to GenRef) public
+open Imperative.Condition renaming (Condition to GenCondition) public
+open Imperative.Specifications StateThread Array public
+open Imperative.Restructuring public
 
 _>>=_ :
   ∀ {s : StateThread} {ℓA ℓB} {A : Set ℓA} {B : Set ℓB}

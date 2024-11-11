@@ -14,20 +14,24 @@ open import ArrayValue
 open import Erased
 open import Realizer
 
-import Imperative.Condition
-import Imperative.Framing
-import Imperative.Restructuring
+open import Imperative.Slice renaming (Slice to GenSlice; Ref to GenRef)
+open import Imperative.Condition renaming (Condition to GenCondition)
+open import Imperative.Restructuring
+open import Imperative.Framing
+
+module Specifications (StateThread : Setω₀) (Array : StateThread → @0 ℕ → Set lzero) where
+  Slice : StateThread → @0 ℕ → Set lzero
+  Slice s = GenSlice (Array s)
+  Ref : StateThread → Set lzero
+  Ref s = GenRef (Array s)
+  Condition : StateThread → Setω₀
+  Condition s = GenCondition (Ref s)
 
 record Impl : Setω₁ where
   field
     StateThread : Setω₀
     Array : StateThread → @0 ℕ → Set lzero
-  module Condition = Imperative.Condition StateThread Array
-  module Restructuring = Imperative.Restructuring StateThread Array
-  module Framing = Imperative.Framing StateThread Array
-  open Condition
-  open Restructuring
-  open Framing
+  open Specifications StateThread Array
   field
     Program : ∀ {ℓ} (s : StateThread) (A : Set ℓ) (@0 pre : Condition s) (@0 post : A → Condition s) → Set ℓ
     runProgram :

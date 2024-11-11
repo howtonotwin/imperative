@@ -97,14 +97,6 @@ private
       strErr "multiple matches for key " ∷ termErr (q .key) ∷
       strErr " in " ∷ listErr (List.map conditionPartErr ps))
 
-  -- Definitions in Imperative.{Condition,Restructuring,Framing} have three
-  -- arguments for the state thread type, the array type, and the current state
-  -- thread. These are shorthands to skip those arguments while analyzing or
-  -- building terms.
-  pattern ctxArgs as = _ ∷ _ ∷ _ ∷ as
-  defCtxArgs : List (Arg Term)
-  defCtxArgs = vArg unknown ∷ vArg unknown ∷ hArg unknown ∷ []
-
   decomposeCondition : Term → TC (List ConditionPart × Blocker′)
   decomposeCondition conditionTerm = do
     conditionNormalized ← normalize conditionTerm
@@ -116,8 +108,8 @@ private
     pure (parts , blockerAll′ (mapMaybe blockerTerm′ keys))
     where
       peel : Term → TC (List ConditionPart)
-      peel (con (quote Imperative.Condition.𝟏) (ctxArgs [])) = pure []
-      peel (con (quote Imperative.Condition._⨾_) (ctxArgs (arg _ assignmentTerm ∷ arg _ rest ∷ []))) = do
+      peel (con (quote Imperative.Condition.𝟏) (_ ∷ [])) = pure []
+      peel (con (quote Imperative.Condition._⨾_) (_ ∷ arg _ assignmentTerm ∷ arg _ rest ∷ [])) = do
         restParts ← peel rest
         key ← normalize (def (quote Imperative.Condition.Assignment.var) (vArg assignmentTerm ∷ []))
         pure (
@@ -134,7 +126,7 @@ private
   composeCondition []                    =
     con (quote Imperative.Condition.𝟏) []
   composeCondition (p ∷ ps) =
-    def (quote Imperative.Condition._&_) (defCtxArgs ++ vArg (p .body) ∷ vArg (composeCondition ps) ∷ [])
+    def (quote Imperative.Condition._&_) (vArg (p .body) ∷ vArg (composeCondition ps) ∷ [])
 
   restructure-loop : List ConditionPart → List ConditionPart → Term → TC ⊤
   restructure-loop inputParts []       hole =
@@ -144,7 +136,6 @@ private
     subhole ← checkType unknown unknown
     unify hole
       (def (quote Imperative.Restructuring.[_]&[_]&[_]⨾⨾_) (
-        defCtxArgs ++
         vArg (composeCondition before) ∷ vArg (p .body) ∷ vArg (composeCondition after) ∷
         vArg subhole ∷ []))
     restructure-loop (before ++ after) ps subhole
@@ -154,7 +145,7 @@ restructuring-tactic hole = do
   input ← checkType unknown unknown
   output ← checkType unknown unknown
   checkType hole
-    (def (quote Imperative.Restructuring.Restructuring) (defCtxArgs ++ vArg input ∷ vArg output ∷ []))
+    (def (quote Imperative.Restructuring.Restructuring) (vArg input ∷ vArg output ∷ []))
 
   inputParts , blocker1 ← decomposeCondition input
   debugPrint "imperative.restructuring-tactic" 20 (strErr "input: " ∷ listErr (List.map conditionPartErr inputParts))
