@@ -28,6 +28,7 @@ open import Realizer
 import Imperative
 open import Imperative.Slice hiding (Slice; Ref)
 open import Imperative.Condition hiding (Condition)
+import Imperative.Specifications
 open import Imperative.Restructuring
 import Imperative.Lemmas as Lemmas
 

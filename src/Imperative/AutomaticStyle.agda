@@ -16,7 +16,6 @@ private module I = Imperative.Impl I
 open I hiding (_>>=_; _>>_; return) public
 open Imperative.Slice hiding (slice) renaming (Slice to GenSlice; Ref to GenRef) public
 open Imperative.Condition renaming (Condition to GenCondition) public
-open Imperative.Specifications StateThread Array public
 open Imperative.Restructuring public
 
 _>>=_ :

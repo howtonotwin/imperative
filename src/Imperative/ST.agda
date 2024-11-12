@@ -12,6 +12,7 @@ import Realizer as SafeRealizer
 import Imperative
 open import Imperative.Slice hiding (Slice; Ref)
 open import Imperative.Condition hiding (Condition)
+import Imperative.Specifications
 open import Imperative.Restructuring
 
 {-# FOREIGN GHC import qualified Control.Monad.ST #-}
