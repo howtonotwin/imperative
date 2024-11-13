@@ -79,14 +79,14 @@ file.)
   open Imperative.Specifications StateThread Array public
 ```
 
-Having defined some auxiliary data types, we can now continuing declaring the
-primitive operations. The first of these is `Program`, which is used to give
-types to imperative programs. A `Program s A pre post` is a sequence of
-instructions that can run in the state thread `s : StateThread` on top of a heap
-initially described by `pre : Condition s` (the *precondition*), and finishes by
-returning a value `x : A` while leaving the heap in a state described by
-`post x : Condition s` (the *postcondition*). Note that the state of the heap
-after the program has run may depend on the returned value.
+Having defined ways to refer to and specify the contents of memory, we now
+continue declaring primitive operations. The first of these is `Program`, which
+forms the types of imperative programs. A `Program s A pre post` is a sequence
+of instructions that can run in the state thread `s : StateThread` on top of a
+heap initially described by `pre : Condition s` (the *precondition*), and
+finishes by returning a value `x : A` while leaving the heap in a state
+described by `post x : Condition s` (the *postcondition*). Note that the state
+of the heap after the program has run may depend on the returned value.
 
 ```
   field
@@ -276,13 +276,21 @@ of `r ↦ y ⨾ 𝟏`. The difference is exactly rewriting by `realizes y′`.
 ```
 
 It is possible to allocate a single memory cell by just allocating an array of
-size `1`.
+size `1`. As this is perhaps the first nontrivial program written in `Program`,
+for explanatory purposes the type of each line and the expected type after each
+line (that is, the type of the hole left if the remainder of the `do` block is
+deleted and replaced with a `?`) is shown. Note that this information is just
+what Agda's interactive mode supplies when an interaction point is placed in a
+`Program` `do`-block.
 
 ```
   alloc : {s : StateThread} → Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
   alloc = do
-    a ← allocArray 1
+    -- the rest of the block should be a Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
+    a ← allocArray 1 -- allocArray 1 : Program s (Array s 1) 𝟏 (λ r → fullSlice r ↦ tt ⨾ 𝟏)
+    -- with a : Array s 𝟏 in the context, a Program s (Ref s) (fullSlice a ↦ tt ⨾ 𝟏) (λ r → r ↦ tt ⨾ 𝟏) is wanted
     return (fullSlice a)
+      -- return {cond = λ r → r ↦ tt ⨾ 𝟏} (fullSlice a) : Program s (Ref s) (fullSlice a ↦ tt) (λ r → r ↦ tt ⨾ 𝟏)
 ```
 
 It is also possible to allocate a memory location and initialize it with a given
@@ -290,10 +298,13 @@ value.
 
 ```
   init : ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 x : A} → Realizer x → Program s (Ref s) 𝟏 (λ r → r ↦ x ⨾ 𝟏)
-  init x = do
-    v ← alloc
-    writeRealized v x
-    return v
+  init {x = x} xᵣ = do
+    -- wanted: Program s (Ref s) 𝟏 (λ r → r ↦ x ⨾ 𝟏)
+    v ← alloc -- given: Program s (Ref s) 𝟏 (λ r → r ↦ tt ⨾ 𝟏)
+    -- given v : Ref s, wanted: Program s (Ref s) (v ↦ tt ⨾ 𝟏) (λ r → r ↦ x ⨾ 𝟏)
+    writeRealized v xᵣ -- given: Program s ⊤ (v ↦ tt ⨾ 𝟏) (λ _ → v ↦ x ⨾ 𝟏)
+    -- wanted: Program s (Ref s) (v ↦ x ⨾ 𝟏) (λ r → r ↦ x ⨾ 𝟏)
+    return v -- inferring {cond = λ r → r ↦ x ⨾ 𝟏}, given: Program s (Ref s) (v ↦ x ⨾ 𝟏) (λ r → r ↦ x ⨾ 𝟏)
 ```
 
 Finally, we can read and write whole `Slice`s by using `read` and `write`
@@ -311,12 +322,32 @@ changes to the heap state together. `Imperative.Framing` is used to write the
   writeSlice :
     {s : StateThread} {@0 n : ℕ} {@0 pre : ArrayValue n} (arr : Slice s n) (xs : ArrayValue n) →
     Program s ⊤ (arr ↦＊ pre) (λ _ → arr ↦＊ xs)
-  writeSlice {pre = []}      arr []       = return tt
+  writeSlice {pre = []}      arr []       = return tt -- inferring {cond = λ _ → 𝟏}, wanted/given: Program s ⊤ 𝟏 𝟏
   writeSlice {pre = p ∷ pre} arr (x ∷ xs) = do
+    -- wanted: Program s ⊤ (* arr ↦ p ⨾ ++ arr ↦＊ pre) (λ _ → * arr ↦ x ⨾ ++ arr ↦＊ xs)
     frame (++ arr ↦＊ _) (write (* arr) x)
+      -- under frame, given: Program s ⊤ (* arr ↦ p ⨾ 𝟏) (λ _ → * arr ↦ x ⨾ 𝟏)
+      -- framed, have:       Program s ⊤ (* arr ↦ p ⨾ ++ arr ↦＊ pre) (λ _ → * arr ↦ x ⨾ ++ arr ↦＊ pre)
+    -- wanted: Program s ⊤ (* arr ↦ x ⨾ ++ arr ↦＊ pre) (λ _ → * arr ↦ x ⨾ ++ arr ↦＊ xs)
     restructure (unfocus (((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦＊ _ ]<) <&> >[ * arr ⨾⨾ 𝟏 ]<))
+      -- read the argument to unfocus as:
+      --   first, write the precondition as (* arr ⨾⨾ 𝟏) & (++ arr ↦＊ _). take the right part.
+      --   then, what is left over is (* arr ⨾⨾ 𝟏). take that too.
+      --   and produce the postcondition by _&_ing these
+      -- thus, have: Program s ⊤ (* arr ↦ x ⨾ ++ arr ↦＊ pre) (λ _ → ++ arr ↦＊ pre & * arr ↦ x ⨾ 𝟏)
+    -- wanted: Program s ⊤ (++ arr ↦＊ pre & * arr ↦ x ⨾ 𝟏) (λ _ → * arr ↦ x ⨾ ++ arr ↦＊ xs)
     frame (* arr ⨾⨾ 𝟏) (writeSlice (++ arr) xs)
+      -- under frame, given: Program s ⊤ (++ arr ↦＊ pre) (λ _ → ++ arr ↦＊ xs)
+      -- thus have: Program s ⊤ (++ arr ↦＊ pre & * arr ↦ x ⨾ 𝟏) (λ _ → ++ arr ↦＊ xs & * arr ↦ x ⨾ 𝟏)
+    -- wanted: Program s ⊤ (++ arr ↦＊ xs & * arr ↦ x ⨾ 𝟏) (λ _ → * arr ↦ x ⨾ ++ arr ↦＊ xs)
     restructure (unfocus (((++ arr ↦＊ _) &> >[ * arr ⨾⨾ 𝟏 ]<) <&> (>[ ++ arr ↦＊ _ ]< <& 𝟏)))
+      -- read the argument to unfocus as:
+      --   first, write the precondition as (++ arr ↦＊ _) & (* arr ⨾⨾ 𝟏). take the right part.
+      --   then, what is left over is (++ arr ↦＊ _) & 1. take the left part.
+      --   and produce the postcondition by _&_ing these
+      -- thus, have: Program s ⊤ (++ arr ↦＊ xs & * arr → x ⨾ 𝟏) (λ _ → * arr → x ⨾ ++ arr ↦＊ xs)
+
+  -- hopefully the following also makes sense now
   readVec :
     ∀ {s : StateThread} {ℓ} {A : Set ℓ} {n : ℕ} (arr : Slice s n) {@0 xs : Vec A n} →
     Program s (Realizer xs) (arr ↦＊ vec xs) (λ _ → arr ↦＊ vec xs)
