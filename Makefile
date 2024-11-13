@@ -12,6 +12,7 @@ html:
 	cd example; find . -name '*.lagda.md' -exec agda --html --html-dir=../html --html-highlight=auto {} \;
 	mkdir -p html
 	echo ".Agda, code { font-family: JuliaMono, monospace; }" >> html/Agda.css
+	echo ".Agda :target { background-color: lightskyblue; }" >> html/Agda.css
 	for md in html/*.md; do \
 		name=$${md#html/}; name=$${name%.md}; \
 		[ -e "$$md" ] && pandoc -s "$$md" -o "html/$$name.html" \
