@@ -6,7 +6,7 @@ Pure:
 example/Main:
 	cd example; agda --compile Main.agda
 clean:
-	rm -rf example/MAlonzo _build
+	rm -rf example/MAlonzo _build html
 html:
 	cd src; find . -name '*.lagda.md' -exec agda --html --html-dir=../html --html-highlight=auto {} \;
 	cd example; find . -name '*.lagda.md' -exec agda --html --html-dir=../html --html-highlight=auto {} \;
