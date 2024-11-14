@@ -1,7 +1,6 @@
 {-# OPTIONS --safe #-}
--- Version of Fibonacci where all structural manipulations of the program state
--- (i.e. uses of the frame rule and reorderings) are manually written out
--- instead of being handled by automation
+-- Version of Fibonacci where structural manipulations and framings of the heap
+-- are manually written out instead of being automated away
 module FibonacciManual where
 
 open import Data.Nat hiding (_⊔_)
