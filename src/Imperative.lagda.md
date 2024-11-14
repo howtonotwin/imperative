@@ -1,10 +1,48 @@
 Here we declare the primitive data and operations needed to embed and run
-provably correct imperative programs inside a dependently typed pure functional
-language. Note that this module is `--safe` because it does not attempt to
-define an implementation of the specified primitives. Imperative programs are
-meant to be written by generalizing over an `Imperative.Impl` argument, which is
-a record type whose fields hold the primitives. Unsafety is required only at the
-top level to pass the efficient implementation `Imperative.ST` in.
+provably correct (in particular, correct by construction) imperative programs
+inside a dependently typed pure functional language. Note that this module is
+`--safe` because it does not attempt to define an implementation of the
+specified primitives. Imperative programs are meant to be written by
+generalizing over an `Imperative.Impl` argument, which is a record type whose
+fields hold the primitives. Unsafety is required only to load the efficient
+implementation of these primitives in `Imperative.ST`.
+
+The overall idea is to allow imperative programs to be given types that are as
+rich as the types that can be given to functional programs in a dependent
+language. For example, in Agda, a function `sorted` that takes a list and
+produces a sorted list with the same elements could be given the signature
+
+    sorted : (xs : List ℕ) → Σ[ ys ∈ List ℕ ] Permutation xs ys × Sorted ys
+
+The type of such a function is so strict that anything of the correct type is
+guaranteed to also be functionally correct (assuming `Permutation` and `Sorted`
+are correctly defined). Any definition of `sorted` will simultaneously describe
+how to compute the function and prove that the computation is correct. The
+Curry-Howard isomorphism is the key to ensuring that the same language (here
+Agda) can be used both for programming and verifying.
+
+In contrast to the situation for functional programming, support for such rich
+typing in imperative languages is somewhat lacking. In particular, many
+existing techniques for producing formally verified imperative programs rely on
+writing the program in a traditional imperative language (such as C) and then
+using a different system to analyze the code. For example, the Verified Software
+Toolchain is an example of a system in this class. In the VST, code is written
+in C, the C syntax tree is parsed and translated to a Coq data value, and then
+properties are stated and proven about the syntax tree in Coq.
+
+This project is an attempt to provide a similar unified environment for
+verified imperative programs as exists for functional programs. The key idea is
+to define a syntax for imperative programming inside an existing
+dependently-typed functional language. The technique of embedding contained
+(that is, respecting the purity and referential transparency of the rest of the
+language) imperative programming inside a pure functional language is already
+well-established, in the form of Haskell's `ST` monad.
+
+In this project, we essentially provide an interface to Haskell's `ST` monad
+from inside Agda (which has a compiler to Haskell). Analogously to how data
+types in Agda are overall similar to those in Haskell but can be given more
+refined specifications, in this project the types given to imperative programs
+always specify their pre- and post-conditions.
 
 ```
 {-# OPTIONS --safe #-}
