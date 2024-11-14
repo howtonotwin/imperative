@@ -345,6 +345,21 @@ value.
     return v -- inferring {cond = λ r → r ↦ x ⨾ 𝟏}, given: Program s (Ref s) (v ↦ x ⨾ 𝟏) (λ r → r ↦ x ⨾ 𝟏)
 ```
 
+We can combine `restructure` and `frame` together to create a general utility
+for invoking subprograms that can simultaneously rearrange the heap description
+and frame out some parts of it. In order to do this, we need a new type
+`Framing` that enforces the appropriate relation between heaps.
+
+```
+  open Imperative.Framing
+  reframe :
+    ∀ {s : StateThread} {ℓ} {A : Set ℓ} {@0 pre focus side : Condition s} {@0 post : A → Condition s} →
+    @0 Framing pre focus side → Program s A focus post → Program s A pre (λ x → post x & side)
+  reframe f p = do
+    restructure (cancelFraming f)
+    frame _ p
+```
+
 Finally, we can read and write whole `Slice`s by using `read` and `write`
 repeatedly. Note that writing values of heterogenous types is easy in
 `writeSlice` as we have the type `ArrayValue`, but reading values of
@@ -352,11 +367,11 @@ heterogenous types is not as easy since we'd need a non-erased witness of those
 types. Instead we only have a homogeneous read operation `readVec`.
 
 Note that many explicit uses `frame` and `restructure` are required to glue the
-changes to the heap state together. `Imperative.Framing` is used to write the
-`Restructuring` proof terms more conveniently.
+changes to the heap state together. These proofs can be largely automated (see
+`Imperative.Solvers` and `Imperative.AutomaticStyle`).
 
 ```
-  open Imperative.Framing
+  -- writeSlice is written with the primitive restructure and frame
   writeSlice :
     {s : StateThread} {@0 n : ℕ} {@0 pre : ArrayValue n} (arr : Slice s n) (xs : ArrayValue n) →
     Program s ⊤ (arr ↦＊ pre) (λ _ → arr ↦＊ xs)
@@ -385,19 +400,20 @@ changes to the heap state together. `Imperative.Framing` is used to write the
       --   and produce the postcondition by _&_ing these
       -- thus, have: Program s ⊤ (++ arr ↦＊ xs & * arr → x ⨾ 𝟏) (λ _ → * arr → x ⨾ ++ arr ↦＊ xs)
 
-  -- hopefully the following also makes sense now
+  -- readVec shows off a use of reframe
+  -- we also choose to stop annotating all the program types
   readVec :
     ∀ {s : StateThread} {ℓ} {A : Set ℓ} {n : ℕ} (arr : Slice s n) {@0 xs : Vec A n} →
     Program s (Realizer xs) (arr ↦＊ vec xs) (λ _ → arr ↦＊ vec xs)
   readVec {n = zero}  arr {xs = []}     = return (realized [])
   readVec {n = suc n} arr {xs = x ∷ xs} = do
     realized .x ← frame (++ arr ↦＊ _) (read (* arr))
-    restructure (unfocus (((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦＊ _ ]<) <&> >[ * arr ⨾⨾ 𝟏 ]<))
-    realized .xs ← frame (* arr ⨾⨾ 𝟏) (readVec (++ arr))
+    realized .xs ← reframe ((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦＊ _ ]<) (readVec (++ arr))
     restructure (unfocus (((++ arr ↦＊ _) &> >[ * arr ⨾⨾ 𝟏 ]<) <&> (>[ ++ arr ↦＊ _ ]< <& 𝟏)))
     return (realized (x ∷ xs))
 ```
 
 Suggested reading after this file is `Imperative.Pure` and `Imperative.ST` to
-see two different implementations of `Imperative.Impl` and `Imperative.Solvers`
-to see how applications of `frame` and `restructure` may be automated.
+see two different implementations of `Imperative.Impl` and
+`Imperative.ManualStyle` and `Imperative.AutomaticStyle` to see how to properly
+import this library.

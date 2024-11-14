@@ -32,10 +32,10 @@ module _ (I : Imperative.Impl) where
   fibWork n lo hi zero    eqLo eqHi =
     restructure ([ 𝟏 ]&[ lo ]↦[ eqLo ]⨾[ hi ⨾⨾ 𝟏 ]⨾⨾ [ 𝟏 ]&[ hi ]↦[ eqHi ]⨾[ 𝟏 ]⨾⨾ ∎)
   fibWork n lo hi (suc m) eqLo eqHi = do
-    oldLo ← frame (>[ lo ⨾⨾ 𝟏 ]< <& (hi ⨾⨾ 𝟏)) (read lo)
-    oldHi ← frame ((lo ⨾⨾ 𝟏) &> >[ hi ⨾⨾ 𝟏 ]<) (read hi)
-    frame (>[ hi ⨾⨾ 𝟏 ]< <& (lo ⨾⨾ 𝟏)) (writeRealized hi !! ⦇ oldLo + oldHi ⦈)
-    frame ((hi ⨾⨾ 𝟏) &> >[ lo ⨾⨾ 𝟏 ]<) (writeRealized lo oldHi)
+    oldLo ← reframe (>[ lo ⨾⨾ 𝟏 ]< <& (hi ⨾⨾ 𝟏)) (read lo)
+    oldHi ← reframe ((lo ⨾⨾ 𝟏) &> >[ hi ⨾⨾ 𝟏 ]<) (read hi)
+    reframe (>[ hi ⨾⨾ 𝟏 ]< <& (lo ⨾⨾ 𝟏)) (writeRealized hi !! ⦇ oldLo + oldHi ⦈)
+    reframe ((hi ⨾⨾ 𝟏) &> >[ lo ⨾⨾ 𝟏 ]<) (writeRealized lo oldHi)
     fibWork (suc n) lo hi m (cong fib (+-suc m n) ∙ eqLo) (cong fib (+-suc m (suc n)) ∙ eqHi)
 
   -- the stuff that goes around the loop
@@ -43,7 +43,7 @@ module _ (I : Imperative.Impl) where
   calcFib zero    = return ⦇ 0 ⦈
   calcFib (suc n) = do
     hi ← init ⦇ 1 ⦈
-    lo ← frame ((hi ⨾⨾ 𝟏) &> >𝟏<) (init ⦇ 0 ⦈)
+    lo ← reframe ((hi ⨾⨾ 𝟏) &> >𝟏<) (init ⦇ 0 ⦈)
     fibWork 0 lo hi n refl refl
     restructure ([ lo ⨾⨾ 𝟏 ]&[ hi ]↦[ cong fib (+-comm n 1) ]⨾[ 𝟏 ]⨾⨾ ╳)
     ret ← read hi

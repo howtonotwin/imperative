@@ -8,7 +8,6 @@ open import Relation.Binary.PropositionalEquality
 import Imperative.Slice
 import Imperative.Condition
 open import Imperative.Framing
-open import Imperative.ManualStyle I using () renaming (frame to reframe)
 import Imperative.Restructuring
 open import Imperative.Solvers
 
