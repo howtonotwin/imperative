@@ -1,0 +1,3 @@
+include: . src example
+depend: standard-library
+flags: --erasure

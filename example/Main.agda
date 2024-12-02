@@ -14,10 +14,11 @@ open import Function
 open import IO
 open import System.Environment
 
+open import Imperative.ST
+
 import Fibonacci
 import FibonacciManual
 import InsertionSort
-open import Imperative.ST
 
 {-# NON_TERMINATING #-}
 readList : IO (List ℕ)
