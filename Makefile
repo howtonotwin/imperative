@@ -8,7 +8,7 @@ example/Main:
 clean:
 	rm -rf example/MAlonzo _build html
 html:
-	agda --html --html-dir=html --html-highlight=auto Exposition.lagda.md
+	cd exposition; agda --html --html-dir=../html --html-highlight=auto Exposition.lagda.md
 	echo ".Agda, code { font-family: JuliaMono, monospace; }" >> html/Agda.css
 	echo ".Agda :target { background-color: lightskyblue; }" >> html/Agda.css
 	for md in html/*.md; do \
