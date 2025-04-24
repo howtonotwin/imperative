@@ -37,21 +37,21 @@ module _ (I : Imperative.Impl) where
     @0 Sorted (Vec.toList pre) →
     Program s
       (Erased (Σ[ post ∈ Vec ℕ (suc n) ] Insertion x pre post × Sorted (Vec.toList post)))
-      (arr ↦＊ vec (pre Vec.∷ʳ z))
-      λ (erased (post , _)) → arr ↦＊ vec post
+      (arr ↦* vec (pre Vec.∷ʳ z))
+      λ (erased (post , _)) → arr ↦* vec post
   insert zero    arr@slice []              x p = do
     write (* arr) x
     return (erased (x ∷ [] , here , [-]))
   insert (suc n) arr@slice pre             x p with erased (Vec.initLast pre)
   insert (suc n) arr@slice .(pre Vec.∷ʳ y) x p | erased (pre , y , refl) = do
-    restructure [! congω₀ (arr ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ arr _ _ !]∎
-    restructure [! congω₀ (arr [∶-1] ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ (arr [∶-1]) _ _ !]∎
+    restructure [! congω₀ (arr ↦*_) (vec-∷ʳ _ _) ∙ω₀ ↦*-∷ʳ arr _ _ !]∎
+    restructure [! congω₀ (arr [∶-1] ↦*_) (vec-∷ʳ _ _) ∙ω₀ ↦*-∷ʳ (arr [∶-1]) _ _ !]∎
     realized .y ← read (arr [∶-1] [-1])
-    restructure [! symω₀ (congω₀ (arr [∶-1] ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ (arr [∶-1]) _ _) !]∎
+    restructure [! symω₀ (congω₀ (arr [∶-1] ↦*_) (vec-∷ʳ _ _) ∙ω₀ ↦*-∷ʳ (arr [∶-1]) _ _) !]∎
     case y ≤? x of λ where
       (yes y≤x) → do
         write (arr [-1]) x
-        restructure [! symω₀ (congω₀ (arr ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ arr _ _) !]∎
+        restructure [! symω₀ (congω₀ (arr ↦*_) (vec-∷ʳ _ _) ∙ω₀ ↦*-∷ʳ arr _ _) !]∎
         return (erased (
           pre Vec.∷ʳ y Vec.∷ʳ x ,
           ereh ,
@@ -67,7 +67,7 @@ module _ (I : Imperative.Impl) where
         write (arr [-1]) y
         erased (post , i , sorted) ←
           insert n (arr [∶-1]) pre x (Lemmas.Sorted.++⁻ (subst Sorted (Lemmas.Vec.toList-∷ʳ pre y) p) .proj₁)
-        restructure [! symω₀ (congω₀ (arr ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ arr _ _) !]∎
+        restructure [! symω₀ (congω₀ (arr ↦*_) (vec-∷ʳ _ _) ∙ω₀ ↦*-∷ʳ arr _ _) !]∎
         return (erased (
           post Vec.∷ʳ y ,
           ereht i ,
@@ -88,8 +88,8 @@ module _ (I : Imperative.Impl) where
     @0 Sorted (Vec.toList sorted) →
     Program s
       (Erased (Σ[ out ∈ Vec ℕ n ] Permutation (sorted Vec.++ unsorted) out × Sorted (Vec.toList out)))
-      (arr ↦＊ vec (sorted Vec.++ unsorted))
-      λ (erased (out , _)) → arr ↦＊ vec out
+      (arr ↦* vec (sorted Vec.++ unsorted))
+      λ (erased (out , _)) → arr ↦* vec out
   insertionSort i zero    arr       sorted []       p        =
     return (erased (
       sorted Vec.++ [] ,
@@ -98,17 +98,17 @@ module _ (I : Imperative.Impl) where
         (sym (Vec.toList-++ sorted [] ∙ List.++-identityʳ (Vec.toList sorted)))
         p))
   insertionSort i (suc m) arr@slice sorted (x ∷ xs) isSorted = do
-    let module Halves = ↦＊-++ i (suc m) arr
+    let module Halves = ↦*-++ i (suc m) arr
     let eqn = +-suc i m
     let arr′ = substSlice eqn arr
-    let module Halves′ = ↦＊-++ (suc i) m arr′
-    restructure [! congω₀ (arr ↦＊_) (vec-++ sorted (x ∷ xs)) ∙ω₀ Halves.eqn (vec sorted) (vec (x ∷ xs)) !]∎
+    let module Halves′ = ↦*-++ (suc i) m arr′
+    restructure [! congω₀ (arr ↦*_) (vec-++ sorted (x ∷ xs)) ∙ω₀ Halves.eqn (vec sorted) (vec (x ∷ xs)) !]∎
     realized .x ← read (* Halves.right)
-    restructure [! symω₀ (congω₀ (Halves′.left ↦＊_) (vec-∷ʳ _ _) ∙ω₀ ↦＊-∷ʳ Halves′.left _ _) !]∎
+    restructure [! symω₀ (congω₀ (Halves′.left ↦*_) (vec-∷ʳ _ _) ∙ω₀ ↦*-∷ʳ Halves′.left _ _) !]∎
     erased (sorted₁ , x∈sorted₁ , isSorted₁) ← insert i Halves′.left sorted x isSorted
-    restructure [! symω₀ (congω₀ (arr′ ↦＊_) (vec-++ _ xs) ∙ω₀ Halves′.eqn (vec _) (vec xs)) !]∎
+    restructure [! symω₀ (congω₀ (arr′ ↦*_) (vec-++ _ xs) ∙ω₀ Halves′.eqn (vec _) (vec xs)) !]∎
     erased (sorted₂ , sorting , isSorted₂) ← insertionSort (suc i) m arr′ sorted₁ xs isSorted₁
-    restructure [! substSlice-↦＊-cast eqn arr _ ∙ω₀ congω₀ (arr ↦＊_) (symω₀ (vec-cast (sym eqn) _)) !]∎
+    restructure [! substSlice-↦*-cast eqn arr _ ∙ω₀ congω₀ (arr ↦*_) (symω₀ (vec-cast (sym eqn) _)) !]∎
     return (erased (
       Vec.cast _ sorted₂ ,
       subst (λ v → Permutation v (Vec.cast (sym eqn) sorted₂))

@@ -69,49 +69,49 @@ module _ {Array : @0 ℕ → Set lzero} where
   open Imperative.Slice
 
   -- "multi-assignment" of a whole slice to a list of values
-  infix 1 _↦＊_
-  _↦＊_ : {@0 n : ℕ} → Slice Array n → ArrayValue n → Condition (Ref Array)
-  s ↦＊ []     = 𝟏
-  s ↦＊ x ∷ xs = * s ↦ x ⨾ ++ s ↦＊ xs
+  infix 1 _↦*_
+  _↦*_ : {@0 n : ℕ} → Slice Array n → ArrayValue n → Condition (Ref Array)
+  s ↦* []     = 𝟏
+  s ↦* x ∷ xs = * s ↦ x ⨾ ++ s ↦* xs
 
-  -- _↦＊_ simplifies (propositionally) on ArrayValue._∷ʳ_
-  ↦＊-∷ʳ :
+  -- _↦*_ simplifies (propositionally) on ArrayValue._∷ʳ_
+  ↦*-∷ʳ :
     ∀ {n : ℕ} {ℓ} {A : Set ℓ} (snoc : Slice Array (suc n)) (xs : ArrayValue n) (y : A) →
-    snoc ↦＊ (xs ArrayValue.∷ʳ y) ≡ω₀ snoc [∶-1] ↦＊ xs & snoc [-1] ↦ y ⨾ 𝟏
-  ↦＊-∷ʳ snoc []       y = reflω₀
-  ↦＊-∷ʳ snoc (x ∷ xs) y =
+    snoc ↦* (xs ArrayValue.∷ʳ y) ≡ω₀ snoc [∶-1] ↦* xs & snoc [-1] ↦ y ⨾ 𝟏
+  ↦*-∷ʳ snoc []       y = reflω₀
+  ↦*-∷ʳ snoc (x ∷ xs) y =
     congω₀ (* snoc ↦ x ⨾_)
-      (↦＊-∷ʳ (++ snoc) xs y ∙ω₀ congω₀↑ (λ r → ++ snoc [∶-1] ↦＊ xs & r ↦ y ⨾ 𝟏) (eqSlice refl refl (+-suc _ _)))
+      (↦*-∷ʳ (++ snoc) xs y ∙ω₀ congω₀↑ (λ r → ++ snoc [∶-1] ↦* xs & r ↦ y ⨾ 𝟏) (eqSlice refl refl (+-suc _ _)))
 
-  -- a length rewrite on either side of _↦＊_ may be moved to the other side
-  substSlice-↦＊-cast :
+  -- a length rewrite on either side of _↦*_ may be moved to the other side
+  substSlice-↦*-cast :
     {n m : ℕ} (e : n ≡ m) (arr : Slice Array n) (xs : ArrayValue m) →
-    substSlice e arr ↦＊ xs ≡ω₀ arr ↦＊ ArrayValue.cast (sym e) xs
-  substSlice-↦＊-cast {zero}  e arr []       = reflω₀
-  substSlice-↦＊-cast {suc n} e arr (x ∷ xs) = congω₀ (* arr ↦ x ⨾_) (substSlice-↦＊-cast (cong pred e) (++ arr) xs)
+    substSlice e arr ↦* xs ≡ω₀ arr ↦* ArrayValue.cast (sym e) xs
+  substSlice-↦*-cast {zero}  e arr []       = reflω₀
+  substSlice-↦*-cast {suc n} e arr (x ∷ xs) = congω₀ (* arr ↦ x ⨾_) (substSlice-↦*-cast (cong pred e) (++ arr) xs)
 
--- _↦＊_ distributes over ArrayValue._++_
+-- _↦*_ distributes over ArrayValue._++_
 -- intended usage pattern:
--- let module MySplit = ↦＊-++ n m combined in ?
+-- let module MySplit = ↦*-++ n m combined in ?
 -- MySplit.left will be a slice to the first `n` elements of `combined`
 -- MySplit.right will be a slice to the last `m` elements
 -- MySplit.eqn will give Condition equalities in terms of `left` and `right`
   private
-    record ↦＊-++-Bundle (n : ℕ) (@0 m : ℕ) (combined : Slice Array (n + m)) : Setω₀ where
+    record ↦*-++-Bundle (n : ℕ) (@0 m : ℕ) (combined : Slice Array (n + m)) : Setω₀ where
       field
         left : Slice Array n
         right : Slice Array m
         @0 eqn :
           (xs : ArrayValue n) (ys : ArrayValue m) →
-          combined ↦＊ xs ArrayValue.++ ys ≡ω₀ left ↦＊ xs & right ↦＊ ys
-    open ↦＊-++-Bundle
-    ↦＊-++ : (n : ℕ) (@0 m : ℕ) (combined : Slice Array (n + m)) → ↦＊-++-Bundle n m combined
-    ↦＊-++ n       m combined .left  = combined [ 0 ∶+ n because +-monoʳ-≤ n z≤n ]
-    ↦＊-++ n       m combined .right = combined [ n ∶+ m because subst (_≤ n + m) (+-comm n m) ≤-refl ]
-    ↦＊-++ zero    m combined .eqn   []       ys = reflω₀
-    ↦＊-++ (suc n) m combined .eqn   (x ∷ xs) ys =
+          combined ↦* xs ArrayValue.++ ys ≡ω₀ left ↦* xs & right ↦* ys
+    open ↦*-++-Bundle
+    ↦*-++ : (n : ℕ) (@0 m : ℕ) (combined : Slice Array (n + m)) → ↦*-++-Bundle n m combined
+    ↦*-++ n       m combined .left  = combined [ 0 ∶+ n because +-monoʳ-≤ n z≤n ]
+    ↦*-++ n       m combined .right = combined [ n ∶+ m because subst (_≤ n + m) (+-comm n m) ≤-refl ]
+    ↦*-++ zero    m combined .eqn   []       ys = reflω₀
+    ↦*-++ (suc n) m combined .eqn   (x ∷ xs) ys =
       let left′ = _ in
       congω₀ (* combined ↦ x ⨾_)
-        (    ↦＊-++ n m (++ combined) .eqn xs ys
-         ∙ω₀ congω₀↑ (λ s → left′ ↦＊ xs & s ↦＊ ys) (eqSlice refl refl (+-suc n _)))
-  module ↦＊-++ (n : ℕ) (@0 m : ℕ) (combined : Slice Array (n + m)) = ↦＊-++-Bundle (↦＊-++ n m combined)
+        (    ↦*-++ n m (++ combined) .eqn xs ys
+         ∙ω₀ congω₀↑ (λ s → left′ ↦* xs & s ↦* ys) (eqSlice refl refl (+-suc n _)))
+  module ↦*-++ (n : ℕ) (@0 m : ℕ) (combined : Slice Array (n + m)) = ↦*-++-Bundle (↦*-++ n m combined)

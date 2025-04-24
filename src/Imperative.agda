@@ -85,7 +85,7 @@ record Impl : Setω₁ where
     -- the dummy value `tt`
     allocArray :
       {s : StateThread} (n : ℕ) →
-      Program s (Array s n) 𝟏 (λ r → fullSlice r ↦＊ ArrayValue.replicate n tt)
+      Program s (Array s n) 𝟏 (λ r → fullSlice r ↦* ArrayValue.replicate n tt)
 
     -- extension of a program to run on a bigger heap than specified in its
     -- precondition by separately conjoining a side-condition to the
@@ -159,24 +159,24 @@ record Impl : Setω₁ where
   -- overwrites a whole Slice by an ArrayValue by using write repeatedly
   writeSlice :
     {s : StateThread} {@0 n : ℕ} {@0 pre : ArrayValue n} (arr : Slice s n) (xs : ArrayValue n) →
-    Program s ⊤ (arr ↦＊ pre) (λ _ → arr ↦＊ xs)
+    Program s ⊤ (arr ↦* pre) (λ _ → arr ↦* xs)
   writeSlice {pre = []}      arr []       = return tt
   writeSlice {pre = p ∷ pre} arr (x ∷ xs) = do
-    frame (++ arr ↦＊ _) (write (* arr) x)
-    restructure (unfocus (((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦＊ _ ]<) <&> >[ * arr ⨾⨾ 𝟏 ]<))
+    frame (++ arr ↦* _) (write (* arr) x)
+    restructure (unfocus (((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦* _ ]<) <&> >[ * arr ⨾⨾ 𝟏 ]<))
     frame (* arr ⨾⨾ 𝟏) (writeSlice (++ arr) xs)
-    restructure (unfocus (((++ arr ↦＊ _) &> >[ * arr ⨾⨾ 𝟏 ]<) <&> (>[ ++ arr ↦＊ _ ]< <& 𝟏)))
+    restructure (unfocus (((++ arr ↦* _) &> >[ * arr ⨾⨾ 𝟏 ]<) <&> (>[ ++ arr ↦* _ ]< <& 𝟏)))
 
   -- reads a whole Slice to a Vec (of homogenous type)
   -- would need a witness for the list of types to make heterogenous
   readVec :
     ∀ {s : StateThread} {ℓ} {A : Set ℓ} {n : ℕ} (arr : Slice s n) {@0 xs : Vec A n} →
-    Program s (Realizer xs) (arr ↦＊ vec xs) (λ _ → arr ↦＊ vec xs)
+    Program s (Realizer xs) (arr ↦* vec xs) (λ _ → arr ↦* vec xs)
   readVec {n = zero}  arr {xs = []}     = return (realized [])
   readVec {n = suc n} arr {xs = x ∷ xs} = do
-    realized .x ← frame (++ arr ↦＊ _) (read (* arr))
-    realized .xs ← reframe ((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦＊ _ ]<) (readVec (++ arr))
-    restructure (unfocus (((++ arr ↦＊ _) &> >[ * arr ⨾⨾ 𝟏 ]<) <&> (>[ ++ arr ↦＊ _ ]< <& 𝟏)))
+    realized .x ← frame (++ arr ↦* _) (read (* arr))
+    realized .xs ← reframe ((* arr ⨾⨾ 𝟏) &> >[ ++ arr ↦* _ ]<) (readVec (++ arr))
+    restructure (unfocus (((++ arr ↦* _) &> >[ * arr ⨾⨾ 𝟏 ]<) <&> (>[ ++ arr ↦* _ ]< <& 𝟏)))
     return (realized (x ∷ xs))
 
 -- implementations in Imperative.Pure and Imperative.ST

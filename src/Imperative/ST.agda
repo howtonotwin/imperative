@@ -103,7 +103,7 @@ private
       write (slice a i _) y = Unsafe.writeSTArray a i y
 
       allocArray :
-        {s : StateThread} (n : ℕ) → Program s (Array s n) 𝟏 (λ a → fullSlice a ↦＊ ArrayValue.replicate n tt)
+        {s : StateThread} (n : ℕ) → Program s (Array s n) 𝟏 (λ a → fullSlice a ↦* ArrayValue.replicate n tt)
       allocArray n = Unsafe.newSTArray n
 
       frame :

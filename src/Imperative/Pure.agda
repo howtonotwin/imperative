@@ -117,11 +117,11 @@ private
         All.tabulate (λ { p refl → 1+n≰n (∈-enumFromFor (suc n) l p) }) ∷ Unique-enumFromFor (suc n) l
       liveRefsArray :
         (u i n a : ℕ) (p : i + n ≤ u) →
-        liveAddrs (slice a i p ↦＊ ArrayValue.replicate n tt) ≡ enumFromFor (i + a) n
+        liveAddrs (slice a i p ↦* ArrayValue.replicate n tt) ≡ enumFromFor (i + a) n
       liveRefsArray u i zero    a p = refl
       liveRefsArray u i (suc n) a p = cong (i + a ∷_) (liveRefsArray u (suc i) n a (subst (_≤ u) (+-suc i n) p))
     allocArray :
-      {s : StateThread} (n : ℕ) → Program s (Array s n) 𝟏 (λ a → fullSlice a ↦＊ ArrayValue.replicate n tt)
+      {s : StateThread} (n : ℕ) → Program s (Array s n) 𝟏 (λ a → fullSlice a ↦* ArrayValue.replicate n tt)
     allocArray n brk sep alloced =
       let eqn = sym (liveRefsArray n 0 n brk ≤-refl) in
       brk , subst Unique eqn (Unique-enumFromFor brk n) , subst (All _) eqn (All.tabulate (inj₂ ∘ ∈-enumFromFor brk n))

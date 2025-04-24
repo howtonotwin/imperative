@@ -104,8 +104,8 @@ private
   pattern _app↦_ r x = con (quote Imperative.Condition._↦_) (_ ∷ arg _ r ∷ _ ∷ _ ∷ arg _ x ∷ [])
   infixr 0 _app&_
   pattern _app&_ c d = def (quote Imperative.Condition._&_) (_ ∷ arg _ c ∷ arg _ d ∷ [])
-  infix 1 _app↦＊_
-  pattern _app↦＊_ s xs = def (quote Imperative.Condition._↦＊_) (_ ∷ _ ∷ arg _ s ∷ arg _ xs ∷ [])
+  infix 1 _app↦*_
+  pattern _app↦*_ s xs = def (quote Imperative.Condition._↦*_) (_ ∷ _ ∷ arg _ s ∷ arg _ xs ∷ [])
   decomposeCondition : Term → TC ConditionCode
   decomposeCondition conditionTerm = do
     -- the normalized term may no longer typecheck (the culprit appears to be
@@ -155,8 +155,8 @@ private
         reduced ← reduce original
         debugPrint "imperative.decomposeCondition" 60 (strErr "WHNF: " ∷ termErr reduced ∷ [])
         case reduced of λ where
-          (slice app↦＊ _) → pure `[ record { key = slice; body = reduced } ]
-          _                → pure `[ record { key = original; body = reduced } ]
+          (slice app↦* _) → pure `[ record { key = slice; body = reduced } ]
+          _               → pure `[ record { key = original; body = reduced } ]
 
   composeCondition : ConditionCode → Term
   composeCondition `[ atom ] = body atom
